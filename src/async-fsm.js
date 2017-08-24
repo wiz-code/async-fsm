@@ -22,25 +22,25 @@ logger = {
     ],
     
     debug: function (message) {
-		if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 0) {
+        if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 0) {
             console.log('DEBUG: ', message);
         }
     },
     
     info: function (message) {
-		if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 1) {
+        if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 1) {
             console.log('INFO: ', message);
         }
     },
     
     warn: function (message) {
-		if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 2) {
+        if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 2) {
             console.log('WARN: ', message);
         }
     },
     
     error: function (message) {
-		if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 3) {
+        if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 3) {
             console.error('ERROR: ', message);
             throw new Error('ERROR: ' + message);
         }
@@ -512,6 +512,26 @@ mixin = {
                 return transits.length > 1 ? transits : _.first(transits);
             },
         },
+        
+        subMachine: {
+            addLink: function (machine) {
+                if (!(machine instanceof Machine)) {
+                    logger.error('Machineインスタンスを指定してください。');
+                }
+
+                this._link = machine;
+                this._addObserver('outbound', machine);
+
+                machine._addObserver('inbound', this);
+            },
+
+            removeLink: function () {
+                this._removeObserver('outbound', this._link);
+
+                this._link._removeObserver('inbound', this);
+                this._link = null;
+            },
+        },
     },
 };
 
@@ -626,7 +646,7 @@ Subject.prototype = _.create(Object.prototype, {
         if (_.isUndefined(observers)) {
             logger.warn('オブザーバーが登録されていません。');
             return;
-		}
+        }
         
         index = _.indexOf(observers, observer);
         if (index > -1) {
@@ -635,16 +655,16 @@ Subject.prototype = _.create(Object.prototype, {
     },
     
     _notify: function (type) {
-		var observers, i, l, observer, args;
-		observers = this._observers[type];
+        var observers, i, l, observer, args;
+        observers = this._observers[type];
         args = _.toArray(arguments).slice(1);
-		
-		if (_.isUndefined(observers)) {
+        
+        if (_.isUndefined(observers)) {
             logger.warn('オブザーバーが登録されていません。');
             return;
-		}
-		
-		for (i = 0, l = observers.length; i < l; i += 1) {
+        }
+        
+        for (i = 0, l = observers.length; i < l; i += 1) {
             observer = observers[i];
             if (_.isFunction(observer._update)) {
                 observer._update.apply(observer, args);
@@ -680,9 +700,9 @@ Entity.prototype = _.create(Subject.prototype, _.extend({
     },
     
     setName: function (name) {
-		this._name = name;
-		return name;
-	},
+        this._name = name;
+        return name;
+    },
     
     isActive: function () {
         return this._status === 'active';
@@ -743,7 +763,7 @@ Elem.prototype = _.create(Entity.prototype, _.extend({
 
 function ProtoState(name) {
     Elem.call(this, name);
-	
+    
     this._type = 'state';
     this.region = null;
     this._regions = [];
@@ -1263,26 +1283,8 @@ function SubMachine(name) {
     this._setObserverType('outbound');
 }
 
-SubMachine.prototype = _.create(ProtoState.prototype, {
+SubMachine.prototype = _.create(ProtoState.prototype, _.extend({
     constructor: SubMachine,
-    
-    addLink: function (machine) {
-        if (!(machine instanceof Machine)) {
-            logger.error('Machineインスタンスを指定してください。');
-        }
-        
-        this._link = machine;
-        this._addObserver('outbound', machine);
-        
-        machine._addObserver('inbound', this);
-    },
-    
-    removeLink: function () {
-        this._removeObserver('outbound', this._link);
-        
-        this._link._addObserver('inbound', this);
-        this._link = null;
-    },
     
     deploy: function () {
         this._deployed = true;
@@ -1398,7 +1400,7 @@ SubMachine.prototype = _.create(ProtoState.prototype, {
             this._inactivate();
         }
     },
-});
+}, mixin.manipulator.subMachine));
 
 
 function PseudoState(name) {
@@ -1605,7 +1607,7 @@ ExitPointPseudoState.prototype = _.create(ConnectionPointPseudoState.prototype, 
 function Transition(name, source, target, options) {
     Elem.call(this, name);
     
-	this._type = 'transition';
+    this._type = 'transition';
     
     if (source instanceof ProtoState || isFalsy(source) || InitialPseudoState) {
         this._rawSource = source;
@@ -1791,7 +1793,7 @@ Transition.prototype = _.create(Elem.prototype, {
 function Region(name, options) {
     Entity.call(this, name);
     
-	this._type = 'region';
+    this._type = 'region';
     
     options = options || {};
     
@@ -1813,11 +1815,11 @@ function Region(name, options) {
     
     this._initialPseudo = null;
     this._final = null;
-	this._historyPseudo = null;
-	this._previousState = null;
+    this._historyPseudo = null;
+    this._previousState = null;
     
-	this._states = [];
-	this._transits = [];
+    this._states = [];
+    this._transits = [];
     
     this._setObserverType('parent', 'states', 'transits');
     this._setDefaultStates();
