@@ -1,13 +1,9 @@
 {
-  "name": "fsm-js",
-  "version": "1.0.0",
+  "name": "async-fsm",
+  "version": "0.1.0",
   "description": "",
-  "main": "fsm.js",
-  "scripts": {
-    "build": "browserify --debug ./src/async-fsm.js -o ./dest/async-fsm.js",
-    "minify": "",
-    "watch": "watchify --debug ./src/async-fsm.js -o ./dest/async-fsm.js"
-  },
+  "main": "./dist/async-fsm.js",
+  "scripts": {},
   "author": "Masa",
   "license": "MIT",
   "dependencies": {
@@ -15,5 +11,13 @@
     "underscore": "^1.8.3",
     "uuid": "^3.0.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "browserify": "^14.4.0",
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^2.6.1",
+    "gulp-uglify": "^3.0.0",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
+  }
 }

@@ -5,7 +5,7 @@
  * LICENSE: MIT license
  */
 
-var _, uuid, Promise, logger, isNodeJS, isFalsy, mixin, FSM, Model, Subject, Entity, Element, ProtoState, State, Machine, FinalState, SubMachine, PseudoState, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, ConnectionPointPseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
+var _, uuid, Promise, logger, isNodeJS, isFalsy, mixin, FSM;
 
 _ = require('underscore');
 uuid = require('uuid/v4');
@@ -515,14 +515,14 @@ mixin = {
     },
 };
 
-Model = function (data) {
+function Model(data) {
     this._data = {};
     this._cache = null;
     
     if (_.isObject(data)) {
         this._data = this._extendDeep(this._data, data);
     }
-};
+}
 
 Model.prototype = _.create(Object.prototype, {
     constructor: Model,
@@ -584,9 +584,9 @@ Model.prototype = _.create(Object.prototype, {
     },
 });
 
-Subject = function () {
+function Subject() {
     this._observers = {};
-};
+}
 
 Subject.prototype = _.create(Object.prototype, {
     constructor: Subject,
@@ -653,7 +653,7 @@ Subject.prototype = _.create(Object.prototype, {
     },
 });
 
-Entity = function (name) {
+function Entity(name) {
     Subject.call(this);
     
     this._id = uuid();
@@ -666,7 +666,7 @@ Entity = function (name) {
     this.methods = {};
     
     this._setObserverType('root');
-};
+}
 
 Entity.prototype = _.create(Subject.prototype, _.extend({
     constructor: Entity,
@@ -708,7 +708,7 @@ Entity.prototype = _.create(Subject.prototype, _.extend({
     
 }, mixin.accessor));
 
-Element = function (name) {
+function Elem(name) {
     Entity.call(this, name);
     
     this._type = 'element';
@@ -720,10 +720,10 @@ Element = function (name) {
     this._setObserverType('container');
     
     Object.defineProperties(this, mixin.descriptor);
-};
+}
 
-Element.prototype = _.create(Entity.prototype, _.extend({
-    constructor: Element,
+Elem.prototype = _.create(Entity.prototype, _.extend({
+    constructor: Elem,
     
     getContainer: function () {
         return this._container;
@@ -741,17 +741,17 @@ Element.prototype = _.create(Entity.prototype, _.extend({
     },
 }, mixin.helper));
 
-ProtoState = function (name) {
-    Element.call(this, name);
+function ProtoState(name) {
+    Elem.call(this, name);
 	
     this._type = 'state';
     this.region = null;
     this._regions = [];
     
     this._setObserverType('regions');
-};
+}
 
-ProtoState.prototype = _.create(Element.prototype, _.extend({
+ProtoState.prototype = _.create(Elem.prototype, _.extend({
     constructor: ProtoState,
     
     getRegion: function (index) {
@@ -833,7 +833,7 @@ ProtoState.prototype = _.create(Element.prototype, _.extend({
     },
 }, mixin.manipulator.state));
 
-State = function (name, options) {
+function State(name, options) {
     ProtoState.call(this, name);
     
     options = _.defaults(options || {}, _.clone(State.options));
@@ -864,7 +864,7 @@ State = function (name, options) {
     
     this._timerId = 0;
     this._lastCallTime = 0;
-};
+}
 
 State.options = {
     entryAction: _.noop,
@@ -1026,7 +1026,7 @@ State.prototype = _.create(ProtoState.prototype, {
     
 });
 
-Machine = function (name, options) {
+function Machine(name, options) {
     ProtoState.call(this, name, options);
     
     options = options || {};
@@ -1052,7 +1052,7 @@ Machine = function (name, options) {
     
     this.appendRegion();
     this._setObserverType('inbound');
-};
+}
 
 Machine.prototype = _.create(ProtoState.prototype, {
     constructor: Machine,
@@ -1148,7 +1148,7 @@ Machine.prototype = _.create(ProtoState.prototype, {
     },
     
     _outerExecution: function (key) {
-        var i, l, region, state, result;
+        var i, l, region, state;
         
         if (!_.isUndefined(key)) {
             for (i = 0, l = this._regions.length; i < l; i += 1) {
@@ -1228,9 +1228,9 @@ Machine.prototype = _.create(ProtoState.prototype, {
     },
 });
 
-FinalState = function (name) {
+function FinalState(name) {
     ProtoState.call(this, name);
-};
+}
 
 FinalState.prototype = _.create(ProtoState.prototype, _.extend({
     constructor: FinalState,
@@ -1253,7 +1253,7 @@ FinalState.prototype = _.create(ProtoState.prototype, _.extend({
     },
 }, mixin.disable));
 
-SubMachine = function (name) {
+function SubMachine(name) {
     ProtoState.call(this, name);
     
     this._link = null;
@@ -1261,7 +1261,7 @@ SubMachine = function (name) {
     
     this.appendRegion();
     this._setObserverType('outbound');
-};
+}
 
 SubMachine.prototype = _.create(ProtoState.prototype, {
     constructor: SubMachine,
@@ -1347,14 +1347,12 @@ SubMachine.prototype = _.create(ProtoState.prototype, {
     },
     
     _innerExecution: function (id) {
-        var exitPoint;
+        var exitPoint, i, l, region;
         
         for (i = 0, l = this._regions.length; i < l; i += 1) {
             region = this._regions[i];
             
-            exitPoint = _.find(region._states, function (s) {
-                return s._key === id;
-            });
+            exitPoint = _.findWhere(region._states, {_key: id});
             
             if (!_.isUndefined(exitPoint)) {
                 exitPoint._entry();
@@ -1403,11 +1401,11 @@ SubMachine.prototype = _.create(ProtoState.prototype, {
 });
 
 
-PseudoState = function (name) {
+function PseudoState(name) {
     ProtoState.call(this, name);
     
     this._type = 'pseudo-state';
-};
+}
 
 PseudoState.prototype = _.create(ProtoState.prototype, _.extend({
     constructor: PseudoState,
@@ -1423,9 +1421,9 @@ PseudoState.prototype = _.create(ProtoState.prototype, _.extend({
     },
 }, mixin.disable));
 
-InitialPseudoState = function (name) {
+function InitialPseudoState(name) {
     PseudoState.call(this, name);
-};
+}
 
 InitialPseudoState.prototype = _.create(PseudoState.prototype, {
     constructor: InitialPseudoState,
@@ -1450,19 +1448,19 @@ InitialPseudoState.prototype = _.create(PseudoState.prototype, {
     },
 });
 
-HistoryPseudoState = function (name, deep) {
+function HistoryPseudoState(name, deep) {
     PseudoState.call(this, name);
     
     this._isDeep = !_.isUndefined(deep) ? deep : false;
-};
+}
 
 HistoryPseudoState.prototype = _.create(PseudoState.prototype, {
     constructor: HistoryPseudoState,
 });
 
-TerminatePseudoState = function (name, deep) {
+function TerminatePseudoState(name, deep) {
     PseudoState.call(this, name);
-};
+}
 
 TerminatePseudoState.prototype = _.create(PseudoState.prototype, {
     constructor: TerminatePseudoState,
@@ -1476,11 +1474,11 @@ TerminatePseudoState.prototype = _.create(PseudoState.prototype, {
     },
 });
 
-ChoicePseudoState = function (name, condition) {
+function ChoicePseudoState(name, condition) {
     PseudoState.call(this, name);
     
     this._condition = _.isFunction(condition) ? condition : _.noop;
-};
+}
 
 ChoicePseudoState.prototype = _.create(PseudoState.prototype, {
     constructor: ChoicePseudoState,
@@ -1502,7 +1500,7 @@ ChoicePseudoState.prototype = _.create(PseudoState.prototype, {
         logger.info('ChoicePseudoStateインスタンス"' + this._name + '"がアクティブ化されました。');
         
         target = this._condition(model, props, methods);
-        if (!target instanceof ProtoState) {
+        if (!(target instanceof ProtoState)) {
             logger.error('遷移先のStateインスタンスが存在しません。');
         }
         
@@ -1520,14 +1518,14 @@ ChoicePseudoState.prototype = _.create(PseudoState.prototype, {
     },
 });
 
-ConnectionPointPseudoState = function (name) {
+function ConnectionPointPseudoState(name) {
     PseudoState.call(this, name);
     
     this._key = '';
     this._hasSubRoot = false;
     this._isEndpoint = false;
     this._setObserverType('sub-root');
-};
+}
 
 ConnectionPointPseudoState.prototype = _.create(PseudoState.prototype, {
     constructor: ConnectionPointPseudoState,
@@ -1538,9 +1536,9 @@ ConnectionPointPseudoState.prototype = _.create(PseudoState.prototype, {
     },
 });
 
-EntryPointPseudoState = function (name) {
+function EntryPointPseudoState(name) {
     ConnectionPointPseudoState.call(this, name);
-};
+}
 
 EntryPointPseudoState.prototype = _.create(ConnectionPointPseudoState.prototype, {
     constructor: EntryPointPseudoState,
@@ -1570,9 +1568,9 @@ EntryPointPseudoState.prototype = _.create(ConnectionPointPseudoState.prototype,
     },
 });
 
-ExitPointPseudoState = function (name) {
+function ExitPointPseudoState(name) {
     ConnectionPointPseudoState.call(this, name);
-};
+}
 
 ExitPointPseudoState.prototype = _.create(ConnectionPointPseudoState.prototype, {
     constructor: ExitPointPseudoState,
@@ -1604,8 +1602,8 @@ ExitPointPseudoState.prototype = _.create(ConnectionPointPseudoState.prototype, 
     },
 });
 
-Transition = function (name, source, target, options) {
-    Element.call(this, name);
+function Transition(name, source, target, options) {
+    Elem.call(this, name);
     
 	this._type = 'transition';
     
@@ -1650,7 +1648,7 @@ Transition = function (name, source, target, options) {
     
     this._isExplicitEntry = false;
     this._exitViaExitPoint = false;
-};
+}
 
 Transition.options = {
     guard: null,
@@ -1660,7 +1658,7 @@ Transition.options = {
     locked: true,
 };
 
-Transition.prototype = _.create(Element.prototype, {
+Transition.prototype = _.create(Elem.prototype, {
     constructor: Transition,
     
     trigger: function () {
@@ -1790,7 +1788,7 @@ Transition.prototype = _.create(Element.prototype, {
     },
 });
 
-Region = function (name, options) {
+function Region(name, options) {
     Entity.call(this, name);
     
 	this._type = 'region';
@@ -1823,7 +1821,7 @@ Region = function (name, options) {
     
     this._setObserverType('parent', 'states', 'transits');
     this._setDefaultStates();
-};
+}
 
 Region.prototype = _.create(Entity.prototype, _.extend({
     constructor: Region,
@@ -2094,6 +2092,6 @@ if (isNodeJS) {
     module.exports = FSM;
     
 } else if (!_.isUndefined(window)) {
-    window.FSM = FSM;   
+    window.FSM = FSM;
 }
 
