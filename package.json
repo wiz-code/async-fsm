@@ -2,10 +2,12 @@
   "name": "@wiz-code/async-fsm",
   "version": "0.1.1",
   "description": "Finite StateMachine JavaScript Library",
+  "keywords": ["FSM", "Finite StateMachine", "JavaScript", "asynchronous"],
   "main": "./dist/async-fsm.min.js",
   "scripts": {},
   "author": "Masa",
   "license": "MIT",
+  "repository": "https://github.com/wiz-code/async-fsm.git",
   "dependencies": {
     "bluebird": "^3.5.0",
     "underscore": "^1.8.3",
