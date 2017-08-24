@@ -2,7 +2,7 @@
   "name": "async-fsm",
   "version": "0.1.1",
   "description": "",
-  "main": "./dist/async-fsm.js",
+  "main": "./dist/async-fsm.min.js",
   "scripts": {},
   "author": "Masa",
   "license": "MIT",
