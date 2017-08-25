@@ -7452,7 +7452,7 @@ module.exports = v4;
 },{"./lib/bytesToUuid":4,"./lib/rng":5}],7:[function(require,module,exports){
 (function (process){
 /* Async-FSM.js
- * version 0.1.3
+ * version 0.1.4
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
