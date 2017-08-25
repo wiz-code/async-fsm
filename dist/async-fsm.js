@@ -9547,10 +9547,7 @@ module.exports = v4;
     };
 
     if (isNodeJS) {
-        if (typeof define === 'function' && define.amd) {
-            define(function () {return FSM;});
-
-        } else if (typeof exports !== 'undefined') {
+        if (typeof exports !== 'undefined') {
             if (typeof module !== 'undefined' && module.exports) {
                 exports = module.exports = FSM;
             }
@@ -9559,7 +9556,10 @@ module.exports = v4;
         }
     } else if (typeof window !== 'undefined') {
         window.FSM = FSM;
-    }
+        
+    } else if (typeof define === 'function' && define.amd) {
+        define(function () {return FSM;});
+    } 
 }());
 }).call(this,require('_process'))
 },{"_process":2,"bluebird":1,"underscore":3,"uuid/v4":6}]},{},[7]);
