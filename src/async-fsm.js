@@ -1,11 +1,13 @@
 /* Async-FSM.js
- * version 0.1.1
+ * version 0.1.3
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
  */
 
-(function (global) {
+;(function () {
+    'use strict';
+    
     var _, uuid, Promise, logger, isNodeJS, isFalsy, mixin, FSM;
 
     _ = require('underscore');
@@ -2091,22 +2093,18 @@
         ExitPointPseudoState: ExitPointPseudoState,
     };
 
-    /*if (isNodeJS) {
-        module.exports = FSM;
+    if (isNodeJS) {
+        if (typeof define === 'function' && define.amd) {
+            define(function () {return FSM;});
 
-    } else if (!_.isUndefined(window)) {
-        window.FSM = FSM;
-    }*/
-    if (_.isFunction(define) && define.amd) {
-        define(function () {return FSM;});
-        
-    } else if (!_.isUndefined(exports)) {
-        if (!_.isUndefined(module) && module.exports) {
-            exports = module.exports = FSM;
+        } else if (typeof exports !== 'undefined') {
+            if (typeof module !== 'undefined' && module.exports) {
+                exports = module.exports = FSM;
+            }
+
+            exports.FSM = FSM;
         }
-
-        exports.FSM = FSM;
-    } else {
-        global.FSM = FSM;
+    } else if (typeof window !== 'undefined') {
+        window.FSM = FSM;
     }
-}(this));
+}());
