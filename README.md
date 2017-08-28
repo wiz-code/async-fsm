@@ -25,7 +25,7 @@ Node.jsの<i>require()</i>関数を使ってモジュールを読み込みます
 var FSM = require('@wiz-code/async-fsm');
 ```
 
-### ライブラリの構成
+### ライブラリのクラス構成
 Async-FSMはいくつかの依存ライブラリがあります。[Underscore.js](https://github.com/jashkenas/underscore)、[Bluebird](https://github.com/petkaantonov/bluebird)、[UUID](https://github.com/kelektiv/node-uuid)の3つで、上記のURLはそれらすべてがインクルードされたファイルです。  
 
 Async-FSMが読み込まれると*FSM*という、このライブラリのクラス（コンストラクタ）を集約したグローバル変数が作成されます。
@@ -46,7 +46,7 @@ Async-FSMが読み込まれると*FSM*という、このライブラリのクラ
  * FSM.EntryPointPseudoState
  * FSM.ExitPointPseudoState
 
-### ステートマシンの構築と実行
+### ステートマシン構築と実行の基本的な流れ
 FSM.Machineクラスのインスタンスを作成します。
 ```javascript
 var myMachine = new FSM.Machine('my-machine');
@@ -339,7 +339,8 @@ var subMachineEntryPoint = new FSM.EntryPointPseudoState('submachine-entry-point
 var subMachineExitPoint = new FSM.ExitPointPseudoState('submachine-exit-point');
 subMachine.addState(subMachineEntryPoint, subMachineExitPoint);
 
-//サブマシン状態として使用するマシン
+//サブマシン状態として使用するマシンの設計
+//このMachineインスタンスの生成からdeploy()メソッドまでの記述部分は別ファイルなどに分離可能
 var linkedMachine = new FSM.Machine('linked-machine');
 var linkedMachineSomeState = new FSM.State('linked-machine-some-state');
 //ラッパーオブジェクトとリンクさせるポイントを追加
@@ -351,13 +352,13 @@ var linkedMachineFirstTransit = new FSM.Transition(false, linkedMachineEntryPoin
 var linkedMachineFinalTransit = new FSM.Transition(false, linkedMachineSomeState, linkedMachineExitPoint);
 linkedMachine.addTransition(linkedMachineFirstTransit, linkedMachineFinalTransit);
 
+linkedMachine.deploy();
+
 //ラッパーオブジェクトとサブマシン状態をリンクさせる
 subMachineEntryPoint.setKey(linkedMachineEntryPoint.getId());
 subMachineExitPoint.setKey(linkedMachineExitPoint.getId());
-
-linkedMachine.deploy();
-
 subMachine.addLink(linkedMachine);
+
 subMachine.deploy();
 ```
 
@@ -384,19 +385,25 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * $props: Object [empty object]
  * $methods: Object [empty object]
 
+#### 使用例
 ```javascript
 var state1 = new FSM.State('state1', {
     data: {
         score: 10000,
     },
+    props: {
+        'user-id': 'abcde',
+    },
     entryAction: function (model, props, methods) {
         console.log( this.get('score') ); //10000
+        console.log( this.props['user-id'] ); //abcde
     },
 });
 
 state1.set('score', 0);
 state1.get('score'); //0
 ```
+#### グループ/全体で共有するデータ
 State/Transitionクラスは上記のインスタンス固有のデータの他、ひとつ上の階層のStateインスタンスのデータストアにアクセスすることができます。こちらは<i>$get()</i>・<i>$set()</i>メソッドでデータ取得・設定します。これによって特定の状態に属する全領域の子要素（State/Transition）をひとつのグループとして共通のデータがやり取りができます。
 
 ```javascript
@@ -424,7 +431,7 @@ var state = new FSM.State('state', {
 ```javascript
 var state = new FSM.State('state', {
     doActivity: function (deltaTime, model, props, methods) {
-        console.log( deltaTime ); //16.7, 16.7, 16.7....
+        console.log( deltaTime ); //16.6, 16.3, 16.9....
     },
     
     loop: true,

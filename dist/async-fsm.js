@@ -7452,7 +7452,7 @@ module.exports = v4;
 },{"./lib/bytesToUuid":4,"./lib/rng":5}],7:[function(require,module,exports){
 (function (process){
 /* Async-FSM.js
- * version 0.1.7
+ * version 0.1.9
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -7461,7 +7461,7 @@ module.exports = v4;
 ;(function () {
     'use strict';
     
-    var _, uuid, Promise, logger, isNodeJS, isFalsy, mixin, FSM;
+    var _, uuid, Promise, logger, isNodeJS, isFalsy, mixin, FSM, Model, Subject, Entity, Elem, ProtoState, State, Machine, FinalState, SubMachine, PseudoState, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, ConnectionPointPseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
 
     _ = require('underscore');
     uuid = require('uuid/v4');
@@ -7604,31 +7604,31 @@ module.exports = v4;
 
         disable: {
             get: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             set: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             unset: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             extend: function (data) {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             save: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             restore: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             clear: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             $props: null,
@@ -7636,55 +7636,55 @@ module.exports = v4;
             $methods: null,
 
             $get: function (key) {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             $set: function (key, value) {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             $unset: function (key) {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             $extend: function (data) {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             $save: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             $restore: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             $clear: function () {
-                logger.error(this.constructor.name + 'インスタンスは内部データを保持できません。');
+                logger.error(this._cname + 'インスタンスは内部データを保持できません。');
             },
 
             addState: function () {
-                logger.error(this.constructor.name + 'インスタンスはサブ状態を持てません。');
+                logger.error(this._cname + 'インスタンスはサブ状態を持てません。');
             },
 
             removeState: function () {
-                logger.error(this.constructor.name + 'インスタンスはサブ状態を持てません。');
+                logger.error(this._cname + 'インスタンスはサブ状態を持てません。');
             },
 
             addTransition: function (transition) {
-                logger.error(this.constructor.name + 'インスタンスは遷移を持てません。');
+                logger.error(this._cname + 'インスタンスは遷移を持てません。');
             },
 
             removeTransition: function (transition) {
-                logger.error(this.constructor.name + 'インスタンスは遷移を持てません。');
+                logger.error(this._cname + 'インスタンスは遷移を持てません。');
             },
 
             appendRegion: function (region) {
-                logger.error(this.constructor.name + 'インスタンスは領域を持てません。');
+                logger.error(this._cname + 'インスタンスは領域を持てません。');
             },
 
             removeRegion: function (region) {
-                logger.error(this.constructor.name + 'インスタンスは領域を持てません。');
+                logger.error(this._cname + 'インスタンスは領域を持てません。');
             },
         },
 
@@ -7716,7 +7716,7 @@ module.exports = v4;
                     var states = _.toArray(arguments);
                     if (_.isNull(this.region)) {
                         this.appendRegion();
-                        logger.info(this.constructor.name + 'インスタンス"' + this._name + '"のRegionインスタンスが自動生成されました。');
+                        logger.info(this._cname + 'インスタンス"' + this._name + '"のRegionインスタンスが自動生成されました。');
                     }
 
                     return this.region.addState.apply(this.region, states);
@@ -7735,7 +7735,7 @@ module.exports = v4;
                     var transits = _.toArray(arguments);
                     if (_.isNull(this.region)) {
                         this.appendRegion();
-                        logger.info(this.constructor.name + 'インスタンス"' + this._name + '"のRegionインスタンスが自動作成されました。');
+                        logger.info(this._cname + 'インスタンス"' + this._name + '"のRegionインスタンスが自動作成されました。');
                     }
 
                     return this.region.addTransition.apply(this.region, transits);
@@ -7995,18 +7995,18 @@ module.exports = v4;
         },
     };
 
-    function Model(data) {
+    Model = function (data) {
         this._data = {};
         this._cache = null;
 
         if (_.isObject(data)) {
             this._data = this._extendDeep(this._data, data);
         }
-    }
+    };
 
     Model.prototype = _.create(Object.prototype, {
         constructor: Model,
-
+        
         get: function (key) {
             return this._data[key];
         },
@@ -8044,6 +8044,8 @@ module.exports = v4;
             this._cache = null;
         },
 
+        _cname: 'Model',
+        
         _extendDeep: function (destination, source) {
             destination = destination || {};
 
@@ -8064,12 +8066,14 @@ module.exports = v4;
         },
     });
 
-    function Subject() {
+    Subject = function () {
         this._observers = {};
-    }
+    };
 
     Subject.prototype = _.create(Object.prototype, {
         constructor: Subject,
+        
+        _cname: 'Subject',
 
         _countObservers: function (type) {
             var result = 0;
@@ -8133,7 +8137,7 @@ module.exports = v4;
         },
     });
 
-    function Entity(name) {
+    Entity = function (name) {
         Subject.call(this);
 
         this._id = uuid();
@@ -8146,7 +8150,7 @@ module.exports = v4;
         this.methods = {};
 
         this._setObserverType('root');
-    }
+    };
 
     Entity.prototype = _.create(Subject.prototype, _.extend({
         constructor: Entity,
@@ -8173,22 +8177,24 @@ module.exports = v4;
                 return _.bind(method, this);
             }, this));
         },
+        
+        _cname: 'Entity',
 
         _activate: function () {
             this._status = 'active';
-            logger.info(this.constructor.name + 'インスタンス"' + this._name + '"がアクティブ化されました。');
+            logger.info(this._cname + 'インスタンス"' + this._name + '"がアクティブ化されました。');
         },
 
         _inactivate: function () {
             this._status = 'inactive';
-            logger.info(this.constructor.name + 'インスタンス"' + this._name + '"が非アクティブ化されました。');
+            logger.info(this._cname + 'インスタンス"' + this._name + '"が非アクティブ化されました。');
         },
 
         _update: _.noop,
 
     }, mixin.accessor));
 
-    function Elem(name) {
+    Elem = function (name) {
         Entity.call(this, name);
 
         this._type = 'element';
@@ -8200,7 +8206,7 @@ module.exports = v4;
         this._setObserverType('container');
 
         Object.defineProperties(this, mixin.descriptor);
-    }
+    };
 
     Elem.prototype = _.create(Entity.prototype, _.extend({
         constructor: Elem,
@@ -8213,6 +8219,8 @@ module.exports = v4;
             return this._level;
         },
 
+        _cname: 'Elem',
+        
         _async: function (callback) {
             this._notify('root', 'async', _.bind(function () {
                 _.bind(callback, this)();
@@ -8221,7 +8229,7 @@ module.exports = v4;
         },
     }, mixin.helper));
 
-    function ProtoState(name) {
+    ProtoState = function (name) {
         Elem.call(this, name);
 
         this._type = 'state';
@@ -8229,7 +8237,7 @@ module.exports = v4;
         this._regions = [];
 
         this._setObserverType('regions');
-    }
+    };
 
     ProtoState.prototype = _.create(Elem.prototype, _.extend({
         constructor: ProtoState,
@@ -8243,15 +8251,6 @@ module.exports = v4;
             }
         },
 
-        _getSuperState: function () {
-            var result = null;
-            if (!_.isNull(this._container) && !_.isNull(this._container._parent)) {
-                result = this._container._parent;
-            }
-
-            return result;
-        },
-
         completion: function () {
             this._async(function () {
                 if (this.isActive()) {
@@ -8261,12 +8260,23 @@ module.exports = v4;
                         this._notify('container', 'completion');
 
                     } else {
-                        logger.error(this.constructor.name + 'インスタンス"' + this._name + '"のコンテナが存在しません。');
+                        logger.error(this._cname + 'インスタンス"' + this._name + '"のコンテナが存在しません。');
                     }
                 } else {
-                    logger.error(this.constructor.name + 'インスタンス"' + this._name + '"はすでに非アクティブ化されています。');
+                    logger.error(this._cname + 'インスタンス"' + this._name + '"はすでに非アクティブ化されています。');
                 }
             });
+        },
+        
+        _cname: 'ProtoState',
+
+        _getSuperState: function () {
+            var result = null;
+            if (!_.isNull(this._container) && !_.isNull(this._container._parent)) {
+                result = this._container._parent;
+            }
+
+            return result;
         },
 
         _update: function (event) {
@@ -8313,7 +8323,7 @@ module.exports = v4;
         },
     }, mixin.manipulator.state));
 
-    function State(name, options) {
+    State = function (name, options) {
         ProtoState.call(this, name);
 
         options = _.defaults(options || {}, _.clone(State.options));
@@ -8344,7 +8354,7 @@ module.exports = v4;
 
         this._timerId = 0;
         this._lastCallTime = 0;
-    }
+    };
 
     State.options = {
         entryAction: _.noop,
@@ -8373,13 +8383,15 @@ module.exports = v4;
                             this._notify('container', 'completion');
                         }
                     } else {
-                        logger.error(this.constructor.name + 'インスタンス"' + this._name + '"のコンテナが存在しません。');
+                        logger.error(this._cname + 'インスタンス"' + this._name + '"のコンテナが存在しません。');
                     }
                 } else {
-                    logger.error(this.constructor.name + 'インスタンス"' + this._name + '"はすでに非アクティブ化されています。');
+                    logger.error(this._cname + 'インスタンス"' + this._name + '"はすでに非アクティブ化されています。');
                 }
             });
         },
+        
+        _cname: 'State',
 
         _update: function (event) {
             var args = _.toArray(arguments).slice(1);
@@ -8449,7 +8461,7 @@ module.exports = v4;
             }
 
             this._status = 'active';
-            logger.info(this.constructor.name + 'インスタンス"' + this._name + '"がアクティブ化されました。');
+            logger.info(this._cname + 'インスタンス"' + this._name + '"がアクティブ化されました。');
 
             this._entryAction(model, props, methods);
 
@@ -8493,7 +8505,7 @@ module.exports = v4;
             this._exitAction(model, props, methods);
 
             this._status = 'inactive';
-            logger.info(this.constructor.name + 'インスタンス"' + this._name + '"が非アクティブ化されました。');
+            logger.info(this._cname + 'インスタンス"' + this._name + '"が非アクティブ化されました。');
 
         },
 
@@ -8506,7 +8518,7 @@ module.exports = v4;
 
     });
 
-    function Machine(name, options) {
+    Machine = function (name, options) {
         ProtoState.call(this, name, options);
 
         options = options || {};
@@ -8530,7 +8542,7 @@ module.exports = v4;
 
         this.appendRegion();
         this._setObserverType('inbound');
-    }
+    };
 
     Machine.prototype = _.create(ProtoState.prototype, {
         constructor: Machine,
@@ -8609,6 +8621,8 @@ module.exports = v4;
                 return Promise.resolve();
             }, this));
         },
+        
+        _cname: 'Machine',
 
         _stackPromise: function (callback) {
             this._promise = this._promise.then(callback, this._onRejected).catch(this._onError);
@@ -8699,12 +8713,14 @@ module.exports = v4;
         },
     });
 
-    function FinalState(name) {
+    FinalState = function (name) {
         ProtoState.call(this, name);
-    }
+    };
 
     FinalState.prototype = _.create(ProtoState.prototype, _.extend({
         constructor: FinalState,
+        
+        _cname: 'FinalState',
 
         _activate: function () {
             this._status = 'active';
@@ -8724,7 +8740,7 @@ module.exports = v4;
         },
     }, mixin.disable));
 
-    function SubMachine(name) {
+    SubMachine = function (name) {
         ProtoState.call(this, name);
 
         this._link = null;
@@ -8732,7 +8748,7 @@ module.exports = v4;
 
         this.appendRegion();
         this._setObserverType('outbound');
-    }
+    };
 
     SubMachine.prototype = _.create(ProtoState.prototype, _.extend({
         constructor: SubMachine,
@@ -8785,6 +8801,8 @@ module.exports = v4;
 
             return this;
         },
+        
+        _cname: 'SubMachine',
 
         _linkForward: function (state) {
             this._async(_.bind(function () {
@@ -8854,15 +8872,17 @@ module.exports = v4;
     }, mixin.manipulator.subMachine));
 
 
-    function PseudoState(name) {
+    PseudoState = function (name) {
         ProtoState.call(this, name);
 
         this._type = 'pseudo-state';
-    }
+    };
 
     PseudoState.prototype = _.create(ProtoState.prototype, _.extend({
         constructor: PseudoState,
 
+        _cname: 'PseudoState',
+        
         _inactivate: function () {
             this._status = 'inactive';
 
@@ -8870,17 +8890,19 @@ module.exports = v4;
                 this._notify('container', 'set-previous-state', null);
             }
 
-            logger.info(this.constructor.name + 'インスタンス"' + this._name + '"が非アクティブ化されました。');
+            logger.info(this._cname + 'インスタンス"' + this._name + '"が非アクティブ化されました。');
         },
     }, mixin.disable));
 
-    function InitialPseudoState(name) {
+    InitialPseudoState = function (name) {
         PseudoState.call(this, name);
-    }
+    };
 
     InitialPseudoState.prototype = _.create(PseudoState.prototype, {
         constructor: InitialPseudoState,
 
+        _cname: 'InitialPseudoState',
+        
         _activate: function () {
             var transit;
 
@@ -8901,23 +8923,27 @@ module.exports = v4;
         },
     });
 
-    function HistoryPseudoState(name, deep) {
+    HistoryPseudoState = function (name, deep) {
         PseudoState.call(this, name);
 
         this._isDeep = !_.isUndefined(deep) ? deep : false;
-    }
+    };
 
     HistoryPseudoState.prototype = _.create(PseudoState.prototype, {
         constructor: HistoryPseudoState,
+        
+        _cname: 'HistoryPseudoState',
     });
 
-    function TerminatePseudoState(name) {
+    TerminatePseudoState = function (name) {
         PseudoState.call(this, name);
-    }
+    };
 
     TerminatePseudoState.prototype = _.create(PseudoState.prototype, {
         constructor: TerminatePseudoState,
 
+        _cname: 'TerminatePseudoState',
+        
         _activate: function () {
             this._status = 'active';
             logger.info('TerminatePseudoStateインスタンス"' + this._name + '"がアクティブ化されました。');
@@ -8927,15 +8953,17 @@ module.exports = v4;
         },
     });
 
-    function ChoicePseudoState(name, condition) {
+    ChoicePseudoState = function (name, condition) {
         PseudoState.call(this, name);
 
         this._condition = _.isFunction(condition) ? condition : _.noop;
-    }
+    };
 
     ChoicePseudoState.prototype = _.create(PseudoState.prototype, {
         constructor: ChoicePseudoState,
 
+        _cname: 'ChoicePseudoState',
+        
         _activate: function () {
             var root, model, props, methods, target, transit;
 
@@ -8971,13 +8999,13 @@ module.exports = v4;
         },
     });
 
-    function ConnectionPointPseudoState(name) {
+    ConnectionPointPseudoState = function (name) {
         PseudoState.call(this, name);
 
         this._key = '';
         this._isMediator = false;
         this._setObserverType('sub-root');
-    }
+    };
 
     ConnectionPointPseudoState.prototype = _.create(PseudoState.prototype, {
         constructor: ConnectionPointPseudoState,
@@ -8986,15 +9014,19 @@ module.exports = v4;
             this._key = key;
             return key;
         },
+        
+        _cname: 'ConnectionPointPseudoState',
     });
 
-    function EntryPointPseudoState(name) {
+    EntryPointPseudoState = function (name) {
         ConnectionPointPseudoState.call(this, name);
-    }
+    };
 
     EntryPointPseudoState.prototype = _.create(ConnectionPointPseudoState.prototype, {
         constructor: EntryPointPseudoState,
 
+        _cname: 'EntryPointPseudoState',
+        
         _activate: function () {
             var transit;
 
@@ -9020,13 +9052,15 @@ module.exports = v4;
         },
     });
 
-    function ExitPointPseudoState(name) {
+    ExitPointPseudoState = function (name) {
         ConnectionPointPseudoState.call(this, name);
-    }
+    };
 
     ExitPointPseudoState.prototype = _.create(ConnectionPointPseudoState.prototype, {
         constructor: ExitPointPseudoState,
 
+        _cname: 'ExitPointPseudoState',
+        
         _activate: function () {
             var upperContainer, transit;
 
@@ -9054,7 +9088,7 @@ module.exports = v4;
         },
     });
 
-    function Transition(name, source, target, options) {
+    Transition = function (name, source, target, options) {
         Elem.call(this, name);
 
         this._type = 'transition';
@@ -9100,7 +9134,7 @@ module.exports = v4;
 
         this._isExplicitEntry = false;
         this._exitViaExitPoint = false;
-    }
+    };
 
     Transition.options = {
         guard: null,
@@ -9186,13 +9220,13 @@ module.exports = v4;
                             superState._exit();
 
                         } else {
-                            logger.error(this._target.constructor.name + 'インスタンス"' + this._target._name + '"の「親」状態が存在しません。');
+                            logger.error(this._target._cname + 'インスタンス"' + this._target._name + '"の「親」状態が存在しません。');
                         }
                     } else {
                         this._source._exit();
                     }
                 } else {
-                    logger.error('遷移元' + this._target.constructor.name + 'インスタンス"' + this._target._name + '"が非アクティブです。');
+                    logger.error('遷移元' + this._target._cname + 'インスタンス"' + this._target._name + '"が非アクティブです。');
                 }
 
                 if (!_.isNull(this._effect)) {
@@ -9206,13 +9240,13 @@ module.exports = v4;
                             superState._entry(undefined, this._target);
 
                         } else {
-                            logger.error(this._target.constructor.name + 'インスタンス"' + this._target._name + '"の「親」状態が存在しません。');
+                            logger.error(this._target._cname + 'インスタンス"' + this._target._name + '"の「親」状態が存在しません。');
                         }
                     } else {
                         this._target._entry();
                     }
                 } else {
-                    logger.error('遷移先' + this._target.constructor.name + 'インスタンス"' + this._target._name + '"がアクティブです。');
+                    logger.error('遷移先' + this._target._cname + 'インスタンス"' + this._target._name + '"がアクティブです。');
                 }
 
                 if (this.isActive()) {
@@ -9223,6 +9257,8 @@ module.exports = v4;
                 }
             });
         },
+        
+        _cname: 'Transition',
 
         _update: function (event) {
             var args = _.toArray(arguments).slice(1);
@@ -9240,7 +9276,7 @@ module.exports = v4;
         },
     });
 
-    function Region(name, options) {
+    Region = function (name, options) {
         Entity.call(this, name);
 
         this._type = 'region';
@@ -9273,7 +9309,7 @@ module.exports = v4;
 
         this._setObserverType('parent', 'states', 'transits');
         this._setDefaultStates();
-    }
+    };
 
     Region.prototype = _.create(Entity.prototype, _.extend({
         constructor: Region,
@@ -9293,6 +9329,8 @@ module.exports = v4;
             return result;
         },
 
+        _cname: 'Region',
+        
         _update: function (event) {
             var args = _.toArray(arguments).slice(1);
 
