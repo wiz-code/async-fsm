@@ -65,7 +65,7 @@ FSM.Transitionクラスを使って、各状態からの遷移を作成します
 var firstTransit = new FSM.Machine('first-transit', false, state1);
 var secondTransit = new FSM.Machine('second-transit', state1, state2);
 ```
-ステートマシンのインスタンスに状態を追加します。
+ステートマシンのインスタンスに遷移を追加します。
 ```javascript
 myMachine.addTransition(firstTransit, secondTransit);
 ```
@@ -160,8 +160,6 @@ newMachine.addState(newState);
  * data: Object [empty object]
  * props: Object [empty object]
  * methods: Object [empty object]
-
-
  * entryAction: Function [empty function]
  * doActivity: Function [empty function]
  * exitAction: Function [empty function]
@@ -237,8 +235,6 @@ var newTransit = new FSM.Transition('new-transit', state1, FSM.FinalState);
  * data: Object [empty object]
  * props: Object [empty object]
  * methods: Object [empty object]
-
-
  * guard: Function [null]
  * effect: Function [null]
  * internal: Bool [false]
@@ -257,7 +253,7 @@ var newTransit = new FSM.Transition('new-transit', state1, FSM.FinalState);
  * trigger()
 
 #### Regionクラス
-**Region**クラスはステートマシン図の「領域（Region）」と同等の意味を持ちます。Regionクラスは親要素にひとつのState/Machineインスタンスを指定でき、子要素に複数のStateとTransitionを持ちます。Regionクラスは直交状態を使用しない限り、ユーザーが明示的に使用することはないですが、Machineインスタンスとコンポジット状態（サブ状態を持つ状態）は内部的にRegionインスタンスが追加されます。ですから、Machine/Stateクラスが持つ<i>addState()</i>・<i>addTransition()</i>メソッドは本来Regionクラスの固有メソッドで、内部でRegionインスタンスにアクセスしています。
+**Region**クラスはステートマシン図の「領域（Region）」と同等の意味を持ちます。Regionクラスは親要素にひとつのState/Machineインスタンスを指定でき、子要素に複数のStateとTransitionを持ちます。Regionクラスは直交状態を使用しない限り、ユーザーが明示的に使用することはないですが、Machineインスタンスとコンポジット状態（サブ状態を持つ状態）は内部的にRegionインスタンスが追加されます。ですから、Machine/Stateクラスが持つ<i>addState()</i>・<i>addTransition()</i>メソッドは本来Regionクラスの固有メソッドで、アクセスを簡易化するため内部でRegionインスタンスにアクセスしています。
 
 ##### インスタンス作成書式
     new Region( String $region_name [, Object $options] )
@@ -369,7 +365,7 @@ var state1 = new FSM.State('state1', {
 state1.set('score', 0);
 state1.get('score'); //0
 ```
-State/Transitionクラスは上記のインスタンス固有のデータの他、ひとつ上の階層のStateインスタンスのデータストアにアクセスすることができます。こちらは<i>$get()</i>・<i>$set()</i>メソッドでデータ取得・設定します。これによって特定の状態に属する全領域の子要素（State/Transition）をひとつのグループとして共通のデータのやり取りができます。
+State/Transitionクラスは上記のインスタンス固有のデータの他、ひとつ上の階層のStateインスタンスのデータストアにアクセスすることができます。こちらは<i>$get()</i>・<i>$set()</i>メソッドでデータ取得・設定します。これによって特定の状態に属する全領域の子要素（State/Transition）をひとつのグループとして共通のデータがやり取りができます。
 
 ```javascript
 state.set('group-id', '12345');
