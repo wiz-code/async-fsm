@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.1.5
+ * version 0.1.6
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -14,8 +14,13 @@
     uuid = require('uuid/v4');
     Promise = require('bluebird');
 
+    FSM = {
+        config: {
+            debuggable: true,
+        },
+    };
+
     logger = {
-        debuggable: true,
         logLevel: 'DEBUG',
         logLevelData: [
             'DEBUG',
@@ -25,25 +30,25 @@
         ],
 
         debug: function (message) {
-            if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 0) {
+            if (FSM.config.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 0) {
                 console.log('DEBUG: ', message);
             }
         },
 
         info: function (message) {
-            if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 1) {
+            if (FSM.config.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 1) {
                 console.log('INFO: ', message);
             }
         },
 
         warn: function (message) {
-            if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 2) {
+            if (FSM.config.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 2) {
                 console.log('WARN: ', message);
             }
         },
 
         error: function (message) {
-            if (this.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 3) {
+            if (FSM.config.debuggable && _.indexOf(this.logLevelData, this.logLevel) <= 3) {
                 console.error('ERROR: ', message);
                 throw new Error('ERROR: ' + message);
             }
@@ -1071,8 +1076,6 @@
         this._deployed = false;
         this._promise = null;
 
-        this._links = [];
-
         this.appendRegion();
         this._setObserverType('inbound');
     }
@@ -1463,7 +1466,7 @@
         constructor: HistoryPseudoState,
     });
 
-    function TerminatePseudoState(name, deep) {
+    function TerminatePseudoState(name) {
         PseudoState.call(this, name);
     }
 
@@ -2076,7 +2079,7 @@
         });
     }
 
-    FSM = {
+    FSM = _.extend(FSM, {
         Machine: Machine,
         State: State,
         Transition: Transition,
@@ -2091,7 +2094,7 @@
 
         EntryPointPseudoState: EntryPointPseudoState,
         ExitPointPseudoState: ExitPointPseudoState,
-    };
+    });
 
     if (isNodeJS) {
         if (typeof exports !== 'undefined') {
