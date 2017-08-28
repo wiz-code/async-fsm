@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.1.6
+ * version 0.1.7
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -56,7 +56,6 @@
     };
 
     isNodeJS = !!(!_.isUndefined(process) && process.versions && process.versions.node);
-
     isFalsy = _.negate(Boolean);
 
     mixin = {
@@ -1093,10 +1092,6 @@
                 if (!(entity instanceof Machine)) {
                     entity._addObserver('root', this);
                 }
-
-                if (entity instanceof ConnectionPointPseudoState && entity._getSuperState() === this) {
-                    entity._isEndpoint = true;
-                }
             }, this));
 
             return this;
@@ -1111,9 +1106,6 @@
                     entity._removeObserver('root', this);
                 }
 
-                if (entity instanceof ConnectionPointPseudoState) {
-                    entity._isEndpoint = false;
-                }
             }, this));
 
             this._updateRelation(this._level, null);
@@ -1302,7 +1294,7 @@
                             entity._addObserver('sub-root', this);
 
                             if (entity._getSuperState() === this) {
-                                entity._hasSubRoot = true;
+                                entity._isMediator = true;
 
                             } else {
                                 logger.error('ConnectionPointPseudoStateインスタンスはサブマシン直下のサブ状態でなければなりません。');
@@ -1327,7 +1319,7 @@
                     if (entity instanceof PseudoState) {
                         if (entity instanceof ConnectionPointPseudoState) {
                             entity._removeObserver('sub-root', this);
-                            entity._hasSubRoot = false;
+                            entity._isMediator = false;
 
                         } else if (!(entity instanceof InitialPseudoState)) {
                             logger.error('SubMachineインスタンスはConnectionPointPseudoStateクラス以外の状態を追加できません。');
@@ -1530,8 +1522,7 @@
         PseudoState.call(this, name);
 
         this._key = '';
-        this._hasSubRoot = false;
-        this._isEndpoint = false;
+        this._isMediator = false;
         this._setObserverType('sub-root');
     }
 
@@ -1557,7 +1548,7 @@
             this._status = 'active';
             logger.info('EntryPointPseudoStateインスタンス"' + this._name + '"がアクティブ化されました。');
 
-            if (this._hasSubRoot) {
+            if (this._isMediator) {
                 this._notify('sub-root', 'entry-point', this);
 
             } else {
@@ -1589,7 +1580,7 @@
             this._status = 'active';
             logger.info('ExitPointPseudoStateインスタンス"' + this._name + '"がアクティブ化されました。');
 
-            if (this._isEndpoint) {
+            if (!this._isMediator) {
                 this._notify('root', 'exit-point', this);
 
             } else {
