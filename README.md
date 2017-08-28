@@ -22,7 +22,7 @@
 
 Node.jsの<i>require()</i>関数を使ってモジュールを読み込みます。
 ```javascript
-var FSM = require('async-fsm');
+var FSM = require('@wiz-code/async-fsm');
 ```
 
 ### ライブラリの構成
