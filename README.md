@@ -84,7 +84,7 @@ myMachine.start();
 
 Machineインスタンスが生成されると、内部的な処理として自動的にひとつの領域が追加され、さらにそこへ開始疑似状態と終了状態が追加されます。ステートマシン図が階層を持たない（単純状態のみの構成）ならば、図を構成するすべてのState/TransitionインスタンスはMachineインスタンスのメソッド群（<i>addState()</i>など）を使用して追加します。もし状態や遷移の追加作業がすべて終了したら、自身の<i>deploy()</i>メソッドを実行してマシンを起動可能な状態にします。マシンを起動するには自身の<i>start()</i>メソッドを使います。
 
-    new Machine( String $state_name [, Object $options] )
+    new FSM.Machine( String $state_name [, Object $options] )
 
 ##### Machineクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
@@ -119,11 +119,9 @@ Machineインスタンスが生成されると、内部的な処理として自�
  * completion()
 
 #### Stateクラス
-**Stateクラス**はステートマシンの各状態（単純状態・コンポジット状態・直交状態）を生成します。Stateクラスは親要素（コンテナ）にひとつの領域（Regionインスタンス）を指定でき、子要素に複数の領域を持つことができます。ただし、Machineクラスと異なり始めから領域が追加されることはありません。領域を追加するには自身の<i>appendRegion()</i>メソッドを使います。なお、領域を持たない状態で<i>addState()</i>メソッドを使用した場合、自動的に領域が作成されます。デフォルトの領域はMachine/Stateクラスの<i>region</i>プロパティで参照することができます。領域を複数追加した場合、それらが遷移時に処理される順番は追加された順になります。
+**Stateクラス**はステートマシンの各状態（単純状態・コンポジット状態・直交状態）を生成します。Stateクラスは親要素（コンテナ）にひとつの領域（Regionインスタンス）を指定でき、子要素に複数の領域を持つことができます。ただし、Machineクラスと異なり始めから領域が追加されることはありません。領域を追加するには自身の<i>appendRegion()</i>メソッドを使います。なお、領域を持たない状態で<i>addState()</i>メソッドを使用した場合、自動的に領域が作成されます。デフォルトの領域はMachine/Stateクラスの<i>region</i>プロパティで参照することができます。領域を複数追加した場合、それらが遷移時に処理される順番は追加された順になります。Async FSMの仕様上Stateクラスは子要素にStateインスタンスを持つことができませんが、便宜上自身の子要素の最初に追加されたRegionインスタンスに直接アクセスできる<i>addState()</i>・<i>addTransition()</i>メソッドが用意されています。
 
-Stateインスタンスは遷移のタイミングで指定された<i>entryAction()</i>、<i>doActivity()</i>、<i>exitAction()</i>を実行します。これらはStateインスタンスを生成するときオプションで指定します。これらのコールバック関数は実行時にトップレベルのステートマシンのデータ構造が渡されます（後述）。これらの振る舞いは基本的に一度だけ実行されますが、<i>loop</i>オプションをtrueに指定すると、Doアクティビティが反復して実行されます。ループ中はDoアクティビティの引数に前後のコールバック実行時間の差分が渡されます。<i>fps</i>オプションはループをONにしているときのみ有効で、Doアクティビティの実行間隔を指定できます。<i>autoTransition</i>オプションはtrueを指定すると、Doアクティビティの実行後、自動的に完了遷移に移行します。
-
-Async FSMの仕様上Stateクラスは子要素にStateインスタンスを持つことができませんが、便宜上自身の子要素の最初に追加されたRegionインスタンスに直接アクセスできる<i>addState()</i>・<i>addTransition()</i>メソッドが用意されています。
+Stateインスタンスは遷移のタイミングで指定された<i>entryAction()</i>、<i>doActivity()</i>、<i>exitAction()</i>を実行します。これらはStateインスタンスを生成するときオプションで指定します。これらのコールバック関数は実行時にトップレベルのステートマシンのデータ構造が渡されます（後述）。これらの振る舞いは基本的に一度だけ実行されますが、<i>loop</i>オプションをtrueに指定すると、Doアクティビティが反復して実行されます。ループ中はDoアクティビティの引数に前後のコールバック実行時間の差分が渡されます。<i>fps</i>オプションはループをONにしているときのみ有効で、Doアクティビティの実行間隔を指定できます。<i>autoTransition</i>オプションはtrueを指定すると、Doアクティビティの実行後、自動的に完了遷移に移行します。ちなみに、Entryアクションなどのコールバック関数内で、<i>completion()</i>メソッドを実行すると任意のタイミングで完了遷移を実行することができます。
 
 ```javascript
 //本来の状態の追加方法
@@ -133,7 +131,7 @@ state.addState(subState);
 ```
 
 ##### インスタンス作成書式
-    new State( String $state_name [, Object $options] )
+    new FSM.State( String $state_name [, Object $options] )
 （注）$state_nameを省略したいときは、第1引数にfalseを指定します。  
 （作成例1）
 ```javascript
@@ -194,7 +192,7 @@ newMachine.addState(newState);
 #### Transitionクラス
 **Transition**クラスはStateインスタンス間のイベントを定義します。インスタンス作成時に遷移前と遷移後のStateインスタンスを指定します。オプションでガード条件やエフェクト（遷移注に実行される振る舞い）を指定することもできます。ただし、<i>guard</i>オプションは必ず真偽値を返す関数を指定しなければなりません。このTransitionインスタンスは<i>trigger()</i>メソッドを持ちます。<i>trigger()</i>メソッドが実行されると、メソッドが記述されたスコープに関係なく即座に状態の遷移が開始されます。また、<i>internal</i>オプションをtrueに指定すると内部遷移となり、ExitアクションとEntryアクションが省略された状態で自己遷移を行います。なお、完了遷移や終了状態に入場後の遷移のように、遷移が<i>trigger()</i>メソッドによらない自動遷移の場合、<i>locked</i>オプションがfalseにします。すると遷移が開始されてからAsync FSMが自動的にマッチしたTransitionインスタンスを探しに行ってそれを実行します。
 
-    new Transition( String $transit_name , State $source , State $target [, Object $options] )
+    new FSM.Transition( String $transit_name , State $source , State $target [, Object $options] )
 （注）$transit_nameを省略したいときは、第1引数にfalseを指定します。  
 （作成例1）
 ```javascript
@@ -230,6 +228,19 @@ var newTransit = new FSM.Transition('new-transit', state1, false);
 //代わりに終了状態のコンストラクタを指定する方法もある
 var newTransit = new FSM.Transition('new-transit', state1, FSM.FinalState);
 ```
+StateインスタンスのautoTransitionオプションを指定していない場合、イベントハンドラや状態の振る舞い（コールバック）にトリガを設定して遷移させます。
+```javascript
+var transit = new FSM.Transition('new-transit', state1, state2);
+
+//trigger()メソッドを使うことで任意のタイミングで遷移を実行できる
+var state1 = new FSM.State(false, {
+    doActivity: function (model, props, methods) {
+        .....
+        .....
+        transit.trigger(); //state2へ遷移を開始
+    }
+});
+```
 ##### Transitionクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
  * data: Object [empty object]
@@ -256,7 +267,7 @@ var newTransit = new FSM.Transition('new-transit', state1, FSM.FinalState);
 **Region**クラスはステートマシン図の「領域（Region）」と同等の意味を持ちます。Regionクラスは親要素にひとつのState/Machineインスタンスを指定でき、子要素に複数のStateとTransitionを持ちます。Regionクラスは直交状態を使用しない限り、ユーザーが明示的に使用することはないですが、Machineインスタンスとコンポジット状態（サブ状態を持つ状態）は内部的にRegionインスタンスが追加されます。ですから、Machine/Stateクラスが持つ<i>addState()</i>・<i>addTransition()</i>メソッドは本来Regionクラスの固有メソッドで、アクセスを簡易化するため内部でRegionインスタンスにアクセスしています。
 
 ##### インスタンス作成書式
-    new Region( String $region_name [, Object $options] )
+    new FSM.Region( String $region_name [, Object $options] )
 （注）$region_nameを省略したいときは、第1引数にfalseを指定します。  
 （作成例）
 ```javascript
@@ -350,8 +361,29 @@ subMachine.addLink(linkedMachine);
 subMachine.deploy();
 ```
 
-#### データ取得・設定
+### データストアの取得・設定
 Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式でまとめてデータを指定することができます。Propsは値の変更がないデータ、たとえばユーザーIDなどを格納し、こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録します。methodsオプションに指定します。なお、これらのデータ区分に特に制約はないので、たとえばPropsにメソッドを指定しても問題はありません。
+
+#### Machine/State/Transition/Regionクラスのデータ操作
+ * get( String $key_name )
+ * set( String $key_name , Mixed $value )
+ * unset( String $key_name )
+ * save()
+ * restore()
+ * clear()
+ * props: Object [empty object]
+ * methods: Object [empty object]
+
+#### State/Transitionクラスの親状態に対するデータ操作
+ * $get( String $key_name )
+ * $set( String $key_name , Mixed $value )
+ * $unset( String $key_name )
+ * $save()
+ * $restore()
+ * $clear()
+ * props: Object [empty object]
+ * methods: Object [empty object]
+
 ```javascript
 var state1 = new FSM.State('state1', {
     data: {
@@ -370,7 +402,7 @@ State/Transitionクラスは上記のインスタンス固有のデータの他�
 ```javascript
 state.set('group-id', '12345');
 
-subState = new FSM.State('sub-state', {
+var subState = new FSM.State('sub-state', {
     entryAction: function (model, props, methods) {
         console.log( this.$get('group-id') ); //'12345'
     },
@@ -379,18 +411,22 @@ subState = new FSM.State('sub-state', {
 システムの最上位であるMachineインスタンスのデータストアはすべてのState/Transitionクラスの子孫要素でアクセス可能です。コールバック関数の引数にModel・Props・Methodsの順でデータが渡されます。
 ```javascript
 machine.props['request-url'] = 'http://abc.abc.abc/';
+machine.methods['hello-world'] = function () { console.log('Hello, World!'); };
 
-state = new FSM.State('state', {
+var state = new FSM.State('state', {
     entryAction: function (model, props, methods) {
         console.log( props['request-url'] ); //'http://abc.abc.abc/'
+        methods['hello-world'](); //Hello, World!
     },
 });
 ```
 注意点として、StateクラスのオプションでループをONにした場合、Doアクティビティのコールバック関数に渡される引数の順番が変更されます。まず第1引数に前後のコールバック関数の実行時間の差分（Delta Time）がミリ秒単位で渡され、それに続いてModel・Props・Methodsが渡されます。Delta Timeはアニメーションなどへの利用を想定しています。
 ```javascript
-state = new FSM.State('state', {
+var state = new FSM.State('state', {
     doActivity: function (deltaTime, model, props, methods) {
         console.log( deltaTime ); //16.7, 16.7, 16.7....
     },
+    
+    loop: true,
 });
 ```
