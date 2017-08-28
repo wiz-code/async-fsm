@@ -381,8 +381,8 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * $save()
  * $restore()
  * $clear()
- * props: Object [empty object]
- * methods: Object [empty object]
+ * $props: Object [empty object]
+ * $methods: Object [empty object]
 
 ```javascript
 var state1 = new FSM.State('state1', {
