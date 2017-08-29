@@ -8378,6 +8378,7 @@ module.exports = v4;
                         transit = _findNextTransition(this._container, this);
                         if (!_.isUndefined(transit)) {
                             transit.trigger();
+
                         } else {
                             this._exit();
                             this._notify('container', 'completion');
@@ -9550,13 +9551,13 @@ module.exports = v4;
         transits = region._transits;
         return _.find(transits, function (transit) {
             if (!_.isUndefined(to)) {
-                return transit._target === to && transit._source === from;
+                return transit._source === from && transit._target === to;
 
-            } else if (transit._source instanceof FinalState) {
-                return transit._source === from && !transit._locked;
-
-            } else {
+            } else if (from instanceof ExitPointPseudoState) {
                 return transit._source === from;
+                
+            } else {
+                return transit._source === from && !transit._locked;
             }
         });
     }

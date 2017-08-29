@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.1.9
+ * version 0.1.91
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -925,6 +925,7 @@
                         transit = _findNextTransition(this._container, this);
                         if (!_.isUndefined(transit)) {
                             transit.trigger();
+
                         } else {
                             this._exit();
                             this._notify('container', 'completion');
@@ -2097,13 +2098,13 @@
         transits = region._transits;
         return _.find(transits, function (transit) {
             if (!_.isUndefined(to)) {
-                return transit._target === to && transit._source === from;
+                return transit._source === from && transit._target === to;
 
-            } else if (transit._source instanceof FinalState) {
-                return transit._source === from && !transit._locked;
-
-            } else {
+            } else if (from instanceof ExitPointPseudoState) {
                 return transit._source === from;
+                
+            } else {
+                return transit._source === from && !transit._locked;
             }
         });
     }

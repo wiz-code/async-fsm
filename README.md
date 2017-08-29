@@ -190,7 +190,7 @@ newMachine.addState(newState);
  * completion()
 
 #### Transitionクラス
-**Transition**クラスはStateインスタンス間のイベントを定義します。インスタンス作成時に遷移前と遷移後のStateインスタンスを指定します。オプションでガード条件やエフェクト（遷移注に実行される振る舞い）を指定することもできます。ただし、<i>guard</i>オプションは必ず真偽値を返す関数を指定しなければなりません。このTransitionインスタンスは<i>trigger()</i>メソッドを持ちます。<i>trigger()</i>メソッドが実行されると、メソッドが記述されたスコープに関係なく即座に状態の遷移が開始されます。また、<i>internal</i>オプションをtrueに指定すると内部遷移となり、ExitアクションとEntryアクションが省略された状態で自己遷移を行います。なお、完了遷移や終了状態に入場後の遷移のように、遷移が<i>trigger()</i>メソッドによらない自動遷移の場合、<i>locked</i>オプションがfalseにします。すると遷移が開始されてからAsync FSMが自動的にマッチしたTransitionインスタンスを探しに行ってそれを実行します。
+**Transition**クラスはStateインスタンス間のイベントを定義します。インスタンス作成時に遷移前と遷移後のStateインスタンスを指定します。オプションでガード条件やエフェクト（遷移注に実行される振る舞い）を指定することもできます。ただし、<i>guard</i>オプションは必ず真偽値を返す関数を指定しなければなりません。このTransitionインスタンスは<i>trigger()</i>メソッドを持ちます。<i>trigger()</i>メソッドが実行されると、メソッドが記述されたスコープに関係なく即座に状態の遷移が開始されます。また、<i>internal</i>オプションをtrueに指定すると内部遷移となり、ExitアクションとEntryアクションが省略された状態で自己遷移を行います。なお、完了遷移や終了状態に入場後の遷移のように、遷移が<i>trigger()</i>メソッドによらない自動遷移（autoTransitionオプションをONにするか、<i>completion()</i>メソッドによる遷移）の場合、<i>locked</i>オプションをfalseにしてください。
 
     new FSM.Transition( String $transit_name , State $source , State $target [, Object $options] )
 （注）$transit_nameを省略したいときは、第1引数にfalseを指定します。  
