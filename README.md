@@ -13,7 +13,7 @@
 ## 使い方（Usage）
 ### ブラウザで使う場合（Browser）
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/31756048/dist/async-fsm.min.js"></script> 
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/64fdb421/dist/async-fsm.min.js"></script> 
 ```
 ### サーバーで使う場合（Server）
 [npm](https://www.npmjs.com/)でパッケージをインストールできます。
