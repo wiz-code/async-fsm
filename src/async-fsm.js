@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.1.91
+ * version 0.2.0
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -2093,9 +2093,8 @@
     }
 
     function _findNextTransition(region, from, to) {
-        var transits;
-
-        transits = region._transits;
+        var transits = region._transits;
+        
         return _.find(transits, function (transit) {
             if (!_.isUndefined(to)) {
                 return transit._source === from && transit._target === to;
