@@ -1,18 +1,39 @@
 /* Async-FSM.js
- * version 0.2.0
+ * version 0.3.0
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
  */
 
-;(function () {
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        define(['bluebird', 'underscore', 'uuid/v4'], factory);
+
+    } else if (typeof exports !== 'undefined') {
+        if (typeof module !== 'undefined' && module.exports) {
+            exports = module.exports = factory(
+                require('bluebird'),
+                require('underscore'),
+                require('uuid/v4')
+            );
+        }
+    } else {
+        if (typeof require === 'function') {
+            root.Promise = require('bluebird');
+            root._ = require('underscore');
+            root.uuidv4 = require('uuid/v4');
+        }
+
+        root.FSM = factory(
+            root.Promise,
+            root._,
+            root.uuidv4
+        );
+    }
+}(this, function (Promise, _, uuidv4) {
     'use strict';
     
-    var _, uuid, Promise, logger, isNodeJS, isFalsy, mixin, FSM, Model, Subject, Entity, Elem, ProtoState, State, Machine, FinalState, SubMachine, PseudoState, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, ConnectionPointPseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
-
-    _ = require('underscore');
-    uuid = require('uuid/v4');
-    Promise = require('bluebird');
+    var logger, isFalsy, mixin, FSM, Model, Subject, Entity, Elem, ProtoState, State, Machine, FinalState, SubMachine, PseudoState, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, ConnectionPointPseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
 
     FSM = {
         config: {
@@ -55,7 +76,6 @@
         },
     };
 
-    isNodeJS = !!(!_.isUndefined(process) && process.versions && process.versions.node);
     isFalsy = _.negate(Boolean);
 
     mixin = {
@@ -687,7 +707,7 @@
     Entity = function (name) {
         Subject.call(this);
 
-        this._id = uuid();
+        this._id = uuidv4();
         this._name = !isFalsy(name) ? name : this._id;
         this._type = 'entity';
         this._status = 'inactive';
@@ -2125,18 +2145,5 @@
         ExitPointPseudoState: ExitPointPseudoState,
     });
 
-    if (isNodeJS) {
-        if (typeof exports !== 'undefined') {
-            if (typeof module !== 'undefined' && module.exports) {
-                exports = module.exports = FSM;
-            }
-
-            exports.FSM = FSM;
-        }
-    } else if (typeof window !== 'undefined') {
-        window.FSM = FSM;
-        
-    } else if (typeof define === 'function' && define.amd) {
-        define(function () {return FSM;});
-    } 
-}());
+    return FSM;
+}));

@@ -6,13 +6,29 @@ var buffer = require('vinyl-buffer');
 var rename = require('gulp-rename');
 var sourcemaps = require('gulp-sourcemaps');
 
-gulp.task('dev-build', function () {
-    browserify({
-        entries: ['./src/async-fsm.js'],
-        debug: true,
-    }).
+gulp.task('build', function () {
+    browserify().
+    require('bluebird').
+    require('underscore').
+    require('uuid/v4').
     bundle().
-    pipe(source('async-fsm.min.js')).
+    pipe(source('require.js')).
+    pipe(buffer()).
+    pipe(
+        uglify({
+            mangle: {
+                keep_fnames: true,
+            },
+        })
+    ).
+    pipe(gulp.dest('./dist'));
+    
+    gulp.src('./src/async-fsm.js').
+    pipe(
+        rename({
+            extname: '.min.js',
+        })
+    ).
     pipe(buffer()).
     pipe(sourcemaps.init({loadMaps: true})).
     pipe(
@@ -22,30 +38,7 @@ gulp.task('dev-build', function () {
             },
         })
     ).
-    pipe(sourcemaps.write()).
-    pipe(gulp.dest('./dev'));
-});
-
-gulp.task('build', function () {
-    browserify({
-        entries: ['./src/async-fsm.js'],
-    }).
-    bundle().
-    pipe(source('async-fsm.js')).
-    pipe(gulp.dest('./dist')).
-    pipe(
-        rename({
-            extname: '.min.js',
-        })
-    ).
-    pipe(buffer()).
-    pipe(
-        uglify({
-            mangle: {
-                keep_fnames: true,
-            },
-        })
-    ).
+    pipe(sourcemaps.write('./')).
     pipe(gulp.dest('./dist'));
 });
 
