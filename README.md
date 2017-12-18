@@ -87,13 +87,18 @@ myMachine.deploy();
 myMachine.start();
 ```
 
+#### トレース用メッセージの非表示
+```javascript
+FSM.config.debuggable = false;
+```
+
 ### 各クラス詳細
 #### Machineクラス
 **Machine**クラスはステートマシン図のトップレベルを示すステートマシン（以下マシン）を生成します。マシンは「状態（State）」の一種であり、「領域（Region）」を持つなど**State**と同じように振る舞いますが、Stateクラスと異なりEntryアクションなどがありません。
 
 Machineインスタンスが生成されると、内部的な処理として自動的にひとつの領域が追加され、さらにそこへ開始疑似状態と終了状態が追加されます。ステートマシン図が階層を持たない（単純状態のみの構成）ならば、図を構成するすべてのState/TransitionインスタンスはMachineインスタンスのメソッド群（<i>addState()</i>など）を使用して追加します。もし状態や遷移の追加作業がすべて終了したら、自身の<i>deploy()</i>メソッドを実行してマシンを起動可能な状態にします。マシンを起動するには自身の<i>start()</i>メソッドを使います。
 
-    new FSM.Machine( String $state_name [, Object $options] )
+    new FSM.Machine( String $machine_name [, Object $options] )
 
 ##### Machineクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
@@ -299,8 +304,12 @@ newMachine.appendRegion(newRegion);
  * isActive()
 
 ###### Regionクラス固有のメソッド
- * hasHistory(Bool $id_deep [false])
+ * hasHistory(Bool $is_deep [false])
  * getIndex()
+ * addState()
+ * removeState()
+ * addTransition()
+ * removeTransition()
 
 #### HistoryPseudoStateクラス
 浅い履歴疑似状態を作成・追加
@@ -338,6 +347,11 @@ someState.addTransition(choiceToAny);
 
 #### SubMachineクラス
 マシンをSubMachineクラスでラップすることで、別のステートマシン図のサブマシン状態として再利用できます。そのためにマシン側と、SubMachineインスタンス側でリンクする入場・退場ポイントを指定する必要があります。
+
+###### SubMachineクラス固有のメソッド
+ * addLink(Machine $instance)
+ * removeLink()
+
 ```javascript
 //サブマシン状態にするマシンをラップするオブジェクトを作成
 var subMachine = new FSM.SubMachine(false);

@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.3.0
+ * version 0.3.1
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -1193,7 +1193,7 @@
         _cname: 'Machine',
 
         _stackPromise: function (callback) {
-            this._promise = this._promise.then(callback, this._onRejected).catch(this._onError);
+            this._promise = this._promise.then(callback).catch(this._onRejected);
         },
 
         _aborted: function (state) {
@@ -1265,10 +1265,6 @@
         },
 
         _onRejected: function (e) {
-            return Promise.reject(e);
-        },
-
-        _onError: function (e) {
             logger.info(e);
             return Promise.reject(e);
         },
