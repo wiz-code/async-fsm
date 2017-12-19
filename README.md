@@ -21,8 +21,8 @@
 ```
 ２．依存ファイルをバンドルファイルから取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/991a1ff0/dist/require.js"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/991a1ff0/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/74b6020c/dist/require.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/74b6020c/dist/async-fsm.min.js"></script>
 ```
 ### サーバーで使う場合（Server）
 [npm](https://www.npmjs.com/)でパッケージをインストールできます。
