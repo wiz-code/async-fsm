@@ -460,3 +460,9 @@ var state = new FSM.State('state', {
     loop: true,
 });
 ```
+### その他設定
+#### コンソール出力のオンオフ
+デフォルトでは遷移が実行されるたびに、ログメッセージがコンソールに出力されます。FSMクラスの読み込み後、以下のコードを加えることでログ出力をオフにすることができます。
+```javascript
+FSM.config.debuggable = false;
+```
