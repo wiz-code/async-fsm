@@ -17,12 +17,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="http://wzrd.in/standalone/uuid%2Fv4@latest"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/74b6020c/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/04f622be/dist/async-fsm.min.js"></script>
 ```
 ２．依存ファイルをバンドルファイルから取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/74b6020c/dist/require.js"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/74b6020c/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/04f622be/dist/require.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/04f622be/dist/async-fsm.min.js"></script>
 ```
 ### サーバーで使う場合（Server）
 [npm](https://www.npmjs.com/)でパッケージをインストールできます。
@@ -111,8 +111,9 @@ Machineインスタンスが生成されると、内部的な処理として自�
 ###### クラス共通のメソッド
  * getId()
  * getName()
- * setName()
+ * setName(String $name)
  * isActive()
+ * addMethod(Object $object) //{method_name1: method1, method_name2: method2...}
 
 ###### Machineクラス固有のメソッド
  * deploy()
@@ -183,8 +184,9 @@ newMachine.addState(newState);
 ###### クラス共通のメソッド
  * getId()
  * getName()
- * setName()
+ * setName(String $name)
  * isActive()
+ * addMethod(Object $object)
 
 ###### State/Transitionクラス共通のメソッド
  * getContainer()
@@ -269,11 +271,14 @@ var state1 = new FSM.State(false, {
 ###### クラス共通のメソッド
  * getId()
  * getName()
- * setName()
+ * setName(String $name)
  * isActive()
+ * addMethod(Object $object)
+
 ###### State/Transitionクラス共通のメソッド
  * getContainer()
  * getCurrentLevel()
+
 ###### Transitionクラス固有のプロパティ・メソッド
  * trigger()
 
@@ -300,8 +305,9 @@ newMachine.appendRegion(newRegion);
 ###### クラス共通のメソッド
  * getId()
  * getName()
- * setName()
+ * setName(String $name)
  * isActive()
+ * addMethod(Object $object)
 
 ###### Regionクラス固有のメソッド
  * hasHistory(Bool $is_deep [false])
@@ -459,10 +465,4 @@ var state = new FSM.State('state', {
     
     loop: true,
 });
-```
-### その他設定
-#### コンソール出力のオンオフ
-デフォルトでは遷移が実行されるたびに、ログメッセージがコンソールに出力されます。FSMクラスの読み込み後、以下のコードを加えることでログ出力をオフにすることができます。
-```javascript
-FSM.config.debuggable = false;
 ```
