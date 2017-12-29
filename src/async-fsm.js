@@ -739,10 +739,16 @@
             return this._status === 'active';
         },
 
-        addMethod: function (methods) {
-            return _.mapObject(methods, _.bind(function (method) {
-                return _.bind(method, this);
-            }, this));
+        addMethod: function (object) {
+            var self, bindObject;
+
+            self = this;
+            bindObject = _.mapObject(object, function (method) {
+                return _.bind(method, self);
+            });
+
+            _.extend(this.methods, bindObject);
+            return this.methods;
         },
         
         _cname: 'Entity',
@@ -906,7 +912,7 @@
         }
 
         if (_.isObject(options.methods)) {
-            this.methods = this.addMethod(options.methods);
+            this.addMethod(options.methods);
         }
 
         this._entryAction = options.entryAction;
@@ -1102,7 +1108,7 @@
         }
 
         if (_.isObject(options.methods)) {
-            this.methods = this.addMethod(options.methods);
+            this.addMethod(options.methods);
         }
 
         this._deployed = false;
@@ -1684,7 +1690,7 @@
         }
 
         if (_.isObject(options.methods)) {
-            this.methods = this.addMethod(options.methods);
+            this.addMethod(options.methods);
         }
 
         this._source = null;
@@ -1858,7 +1864,7 @@
         }
 
         if (_.isObject(options.methods)) {
-            this.methods = this.addMethod(options.methods);
+            this.addMethod(options.methods);
         }
 
         this._parent = null;
