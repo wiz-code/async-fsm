@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.3.2
+ * version 0.3.3
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -567,7 +567,7 @@
         this._cache = null;
 
         if (_.isObject(data)) {
-            this._data = this._extendDeep(this._data, data);
+            this._extendDeep(this._data, data);
         }
     };
 
@@ -596,13 +596,13 @@
         },
 
         save: function () {
-            this._cache = this._extendDeep(this._cache, this._data);
+            this._extendDeep(this._cache, this._data);
         },
 
         restore: function () {
             if (!_.isNull(this._cache)) {
                 this._data = {};
-                this._data = this._extendDeep(this._data, this._cache);
+                this._extendDeep(this._data, this._cache);
             }
         },
 
