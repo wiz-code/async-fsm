@@ -17,12 +17,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="http://wzrd.in/standalone/uuid%2Fv4@latest"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/04f622be/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/c9d4d842/dist/async-fsm.min.js"></script>
 ```
 ２．依存ファイルをバンドルファイルから取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/04f622be/dist/require.js"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/04f622be/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/c9d4d842/dist/require.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/c9d4d842/dist/async-fsm.min.js"></script>
 ```
 ### サーバーで使う場合（Server）
 [npm](https://www.npmjs.com/)でパッケージをインストールできます。
@@ -398,6 +398,7 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * get( String $key_name )
  * set( String $key_name , Mixed $value )
  * unset( String $key_name )
+ * extend( Object $object ) //{$key1: value1, $key2: $value2...}
  * save()
  * restore()
  * clear()
