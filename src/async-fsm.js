@@ -1892,8 +1892,8 @@
         getIndex: function () {
             var result = -1;
 
-            if (_.isNull(this._parent)) {
-                _.indexOf(this._parent._regions, this);
+            if (!_.isNull(this._parent)) {
+                result = _.indexOf(this._parent._regions, this);
             }
 
             return result;
