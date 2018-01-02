@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.3.3
+ * version 0.3.4
  * 
  * Copyright (c) 2017 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -1892,8 +1892,8 @@
         getIndex: function () {
             var result = -1;
 
-            if (_.isNull(this._parent)) {
-                _.indexOf(this._parent._regions, this);
+            if (!_.isNull(this._parent)) {
+                result = _.indexOf(this._parent._regions, this);
             }
 
             return result;
