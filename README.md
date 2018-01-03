@@ -17,12 +17,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script src="http://wzrd.in/standalone/uuid%2Fv4@latest"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/7cf89b13/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/d557830f/dist/async-fsm.min.js"></script>
 ```
 ２．依存ファイルをバンドルファイルから取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/7cf89b13/dist/require.js"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/7cf89b13/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/d557830f/dist/require.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/d557830f/dist/async-fsm.min.js"></script>
 ```
 ### サーバーで使う場合（Server）
 [npm](https://www.npmjs.com/)でパッケージをインストールできます。
@@ -204,6 +204,10 @@ newMachine.addState(newState);
  * removeTransition( Transition $instance1 [, Transition $...] )
  * removeRegion( Region $instance )
  * completion()
+
+###### Stateクラス固有のメソッド
+ * getTicks()
+ * getElapsedTime()
 
 #### Transitionクラス
 **Transition**クラスはStateインスタンス間のイベントを定義します。インスタンス作成時に遷移前と遷移後のStateインスタンスを指定します。オプションでガード条件やエフェクト（遷移注に実行される振る舞い）を指定することもできます。ただし、<i>guard</i>オプションは必ず真偽値を返す関数を指定しなければなりません。このTransitionインスタンスは<i>trigger()</i>メソッドを持ちます。<i>trigger()</i>メソッドが実行されると、メソッドが記述されたスコープに関係なく即座に状態の遷移が開始されます。また、<i>internal</i>オプションをtrueに指定すると内部遷移となり、ExitアクションとEntryアクションが省略された状態で自己遷移を行います。なお、完了遷移や終了状態に入場後の遷移のように、遷移が<i>trigger()</i>メソッドによらない自動遷移（autoTransitionオプションをONにするか、<i>completion()</i>メソッドによる遷移）の場合、<i>locked</i>オプションをfalseにしてください。
