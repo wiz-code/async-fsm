@@ -33,7 +33,7 @@
 }(this, function (Promise, _, uuidv4) {
     'use strict';
     
-    var logger, isFalsy, mixin, FSM, Model, Subject, Entity, Elem, ProtoState, State, Machine, FinalState, SubMachine, PseudoState, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, ConnectionPointPseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
+    var logger, isFalsy, max, mixin, FSM, Model, Subject, Entity, Elem, ProtoState, State, Machine, FinalState, SubMachine, PseudoState, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, ConnectionPointPseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
 
     FSM = {
         config: {
@@ -77,6 +77,7 @@
     };
 
     isFalsy = _.negate(Boolean);
+    max = Math.max;
 
     mixin = {
         accessor: {
@@ -942,6 +943,24 @@
     State.prototype = _.create(ProtoState.prototype, {
         constructor: State,
 
+        getTicks: function () {
+            if (this._loop) {
+                return this._ticks;
+
+            } else {
+                logger.error('Stateインスタンスのloopオプションが指定されてません。');
+            }
+        },
+
+        getElapsedTime: function () {
+            if (this._loop) {
+                return this._elapsedTime;
+
+            } else {
+                logger.error('Stateインスタンスのloopオプションが指定されてません。');
+            }
+        },
+
         completion: function () {
             this._async(function () {
                 var transit;
@@ -990,35 +1009,45 @@
         },
 
         _setTimer: function (callback) {
+            var loop;
+            
+            this._startTime = 0;
+            this._elapsedTime = 0;
+            this._ticks = 0;
             this._timerId = 0;
-            this._lastCallTime = 0;
-
-            this._repeat(callback);
+            
+            loop = _.bind(function () {
+                var timeToCall = this._tick(callback);
+                this._timerId = setTimeout(loop, timeToCall);
+            }, this);
+            
+            loop();
         },
 
         _clearTimer: function () {
             clearTimeout(this._timerId);
         },
 
-        _repeat: function (callback) {
-            var currentTime, processingTime, timeToCall;
+        _tick: function (callback) {
+            var currentTime, deltaTime, processingTime, timeToCall;
 
             currentTime = _.now();
-            processingTime = this._lastCallTime !== 0 ? currentTime - this._lastCallTime : 0;
-            timeToCall = Math.max(this._interval - processingTime, 0);
+            if (this._startTime === 0) {
+                this._startTime = currentTime;
+                deltaTime = 0;
 
-            this._lastCallTime = currentTime + timeToCall;
-            this._timerId = setTimeout(_.bind(this._timeout, this, callback, currentTime, processingTime), timeToCall);
+            } else {
+                deltaTime = currentTime - this._lastTime;
+                this._elapsedTime = currentTime - this._startTime;
+            }
 
-            return this._timerId;
-        },
-
-        _timeout: function (callback, previousTime, processingTime) {
-            var deltaTime;
-            deltaTime = _.now() - previousTime + processingTime;
+            this._lastTime = currentTime;
+            this._ticks += 1;
 
             callback(deltaTime);
-            this._repeat(callback);
+            processingTime = _.now() - currentTime;
+            timeToCall = max(this._interval - processingTime, 0);
+            return timeToCall;
         },
 
         _activate: function () {
