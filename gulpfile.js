@@ -8,22 +8,11 @@ var sourcemaps = require('gulp-sourcemaps');
 
 gulp.task('build', function () {
     browserify().
-    require('bluebird').
-    require('underscore').
-    require('uuid/v4').
+    require('./src/index', {
+        expose: 'async-fsm',
+    }).
     bundle().
-    pipe(source('require.js')).
-    pipe(buffer()).
-    pipe(
-        uglify({
-            mangle: {
-                keep_fnames: true,
-            },
-        })
-    ).
-    pipe(gulp.dest('./dist'));
-    
-    gulp.src('./src/async-fsm.js').
+    pipe(source('async-fsm.js')).
     pipe(
         rename({
             extname: '.min.js',
@@ -31,17 +20,9 @@ gulp.task('build', function () {
     ).
     pipe(buffer()).
     pipe(sourcemaps.init({loadMaps: true})).
-    pipe(
-        uglify({
-            mangle: {
-                keep_fnames: true,
-            },
-        })
-    ).
+    pipe(uglify()).
     pipe(sourcemaps.write('./')).
     pipe(gulp.dest('./dist'));
 });
 
 gulp.task('default', ['build']);
-
-
