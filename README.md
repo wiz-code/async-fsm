@@ -12,18 +12,16 @@
 
 ## 使い方（Usage）
 ### ブラウザで使う場合（Browser）
-１．依存ファイルをCDN経由で取得
+#### 依存ファイルをCDN経由で取得
 ```html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.0/bluebird.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
-<script src="http://wzrd.in/standalone/uuid%2Fv4@latest"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/d557830f/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/develop/dist/async-fsm.min.js"></script>
+<script>
+var FSM = require('async-fsm');
+....
+....
+</script>
 ```
-２．依存ファイルをバンドルファイルから取得
-```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/d557830f/dist/require.js"></script>
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/d557830f/dist/async-fsm.min.js"></script>
-```
+
 ### サーバーで使う場合（Server）
 [npm](https://www.npmjs.com/)でパッケージをインストールできます。
 
@@ -35,8 +33,6 @@ var FSM = require('@wiz-code/async-fsm');
 ```
 
 ### ライブラリのクラス構成
-Async-FSMはいくつかの依存ライブラリがあります。[Underscore.js](https://github.com/jashkenas/underscore)、[Bluebird](https://github.com/petkaantonov/bluebird)、[UUID](https://github.com/kelektiv/node-uuid)の3つで、上記のバンドルファイル（require.js）はそれらすべてがインクルードされたファイルです。  
-
 Async-FSMが読み込まれると*FSM*という、このライブラリのクラス（コンストラクタ）を集約したグローバル変数が作成されます。
 
 #### 基本のクラス
@@ -89,10 +85,19 @@ myMachine.start();
 
 #### トレース用メッセージの非表示
 ```javascript
-FSM.config.debuggable = false;
+FSM.logger.disable();
 ```
 
 ### 各クラス詳細
+
+#### クラス共通のメソッド
+ * getId()
+ * getName()
+ * setName(String $name)
+ * isActive()
+ * addProp(Object $object) //{prop_name1: prop1, prop_name2: prop2...}
+ * addMethod(Object $object) //{method_name1: method1, method_name2: method2...}
+
 #### Machineクラス
 **Machine**クラスはステートマシン図のトップレベルを示すステートマシン（以下マシン）を生成します。マシンは「状態（State）」の一種であり、「領域（Region）」を持つなど**State**と同じように振る舞いますが、Stateクラスと異なりEntryアクションなどがありません。
 
@@ -102,19 +107,11 @@ Machineインスタンスが生成されると、内部的な処理として自�
 
 ##### Machineクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
- * data: Object [empty object]
+ * data: JSONデータ型 [Null]
  * props: Object [empty object]
  * methods: Object [empty object]
 
 ##### Machineクラスのプロパティ/メソッド
-
-###### クラス共通のメソッド
- * getId()
- * getName()
- * setName(String $name)
- * isActive()
- * addMethod(Object $object) //{method_name1: method1, method_name2: method2...}
-
 ###### Machineクラス固有のメソッド
  * deploy()
  * undeploy()
@@ -122,7 +119,14 @@ Machineインスタンスが生成されると、内部的な処理として自�
  * finish()
 
 ###### Machine/Stateクラス共通のプロパティ
- * region: Region [Regionインスタンス]
+ * region: [Regionインスタンス]
+
+###### Machine/State/Transitionクラス共通のプロパティ
+ * container: [Regionインスタンス]
+
+###### Machine/State/Transition/Regionクラス共通のプロパティ
+ * parent: [State/Machineインスタンス]
+ * children: [Array/Object]
 
 ###### Machine/Stateクラス共通のメソッド
  * addState( State $instance1 [, State $...] )
@@ -136,7 +140,7 @@ Machineインスタンスが生成されると、内部的な処理として自�
 #### Stateクラス
 **Stateクラス**はステートマシンの各状態（単純状態・コンポジット状態・直交状態）を生成します。Stateクラスは親要素（コンテナ）にひとつの領域（Regionインスタンス）を指定でき、子要素に複数の領域を持つことができます。ただし、Machineクラスと異なり始めから領域が追加されることはありません。領域を追加するには自身の<i>appendRegion()</i>メソッドを使います。なお、領域を持たない状態で<i>addState()</i>メソッドを使用した場合、自動的に領域が作成されます。デフォルトの領域はMachine/Stateクラスの<i>region</i>プロパティで参照することができます。領域を複数追加した場合、それらが遷移時に処理される順番は追加された順になります。Async FSMの仕様上Stateクラスは子要素にStateインスタンスを持つことができませんが、便宜上自身の子要素の最初に追加されたRegionインスタンスに直接アクセスできる<i>addState()</i>・<i>addTransition()</i>メソッドが用意されています。
 
-Stateインスタンスは遷移のタイミングで指定された<i>entryAction()</i>、<i>doActivity()</i>、<i>exitAction()</i>を実行します。これらはStateインスタンスを生成するときオプションで指定します。これらのコールバック関数は実行時にトップレベルのステートマシンのデータ構造が渡されます（後述）。これらの振る舞いは基本的に一度だけ実行されますが、<i>loop</i>オプションをtrueに指定すると、Doアクティビティが反復して実行されます。ループ中はDoアクティビティの引数に前後のコールバック実行時間の差分が渡されます。<i>fps</i>オプションはループをONにしているときのみ有効で、Doアクティビティの実行間隔を指定できます。<i>autoTransition</i>オプションはtrueを指定すると、Doアクティビティの実行後、自動的に完了遷移に移行します。ちなみに、Doアクティビティなどのコールバック関数内で、<i>completion()</i>メソッドを実行すると任意のタイミングで完了遷移を実行することができます。
+Stateインスタンスは遷移のタイミングで指定された<i>entryAction()</i>、<i>doActivity()</i>、<i>exitAction()</i>を実行します。これらはStateインスタンスを生成するときオプションで指定します。トリガとなるTransitionインスタンスで遷移元、遷移先に指定されたStateインスタンスは、これらのコールバック関数にTransitionインスタンスが渡されます。これらの振る舞いは基本的に一度だけ実行されますが、<i>loop</i>オプションをtrueに指定すると、Doアクティビティが反復して実行されます。ループ中はDoアクティビティの引数に前後のコールバック実行時間の差分が渡されます。<i>fps</i>オプションはループをONにしているときのみ有効で、Doアクティビティの実行間隔を指定できます。<i>autoTransition</i>オプションはtrueを指定すると、Doアクティビティの実行後、自動的に完了遷移に移行します。ちなみに、Doアクティビティなどのコールバック関数内で、<i>completion()</i>メソッドを実行すると任意のタイミングで完了遷移を実行することができます。
 
 ```javascript
 //本来の状態の追加方法
@@ -156,10 +160,10 @@ newMachine.addState(newState);
 （作成例2）
 ```javascript
 var newState = new FSM.State('new-state', {
-    entryAction: function (model, props, methods) {
+    entryAction: function (transit) {
         console.log('entry!!');
     },
-    exitAction: function (model, props, methods) {
+    exitAction: function (transit) {
         console.log('exit!!');
     },
     autoTransition: true,
@@ -170,7 +174,7 @@ newMachine.addState(newState);
 
 ##### Stateクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
- * data: Object [empty object]
+ * data: JSONデータ型 [Null]
  * props: Object [empty object]
  * methods: Object [empty object]
  * entryAction: Function [empty function]
@@ -180,23 +184,16 @@ newMachine.addState(newState);
  * loop: Bool [false]
  * fps: Int [60]
 
-##### Stateクラスのプロパティ/メソッド
-###### クラス共通のメソッド
- * getId()
- * getName()
- * setName(String $name)
- * isActive()
- * addMethod(Object $object)
-
 ###### State/Transitionクラス共通のメソッド
- * getContainer()
- * getCurrentLevel()
+ * getCurrentDepth()
 
 ###### Machine/Stateクラス共通のプロパティ
  * region: Region [null]
 
 ###### Machine/Stateクラス共通のメソッド
- * getRegion(int regionIndex)
+ * getRegion(Integer $egion_index)
+ * getRoot()
+ * getRegionById(String $region_id)
  * addState( State $instance1 [, State $...] )
  * addTransition( Transition $instance1 [, Transition $...] )
  * appendRegion( Region $instance )
@@ -221,11 +218,11 @@ var newTransit = new FSM.Transition('new-transit', state1, state2);
 （作成例2）
 ```javascript
 var newTransit = new FSM.Transition('new-transit', state1, state2, {
-    guard: function (model, props, methods) {
+    guard: function (param) {
         console.log('guard!!');
         return true;
     },
-    effect: function (model, props, methods) {
+    effect: function (param) {
         console.log('effect!!');
     },
     internal: true,
@@ -263,7 +260,7 @@ var state1 = new FSM.State(false, {
 ```
 ##### Transitionクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
- * data: Object [empty object]
+ * data: JSONデータ型 [Null]
  * props: Object [empty object]
  * methods: Object [empty object]
  * guard: Function [null]
@@ -272,19 +269,11 @@ var state1 = new FSM.State(false, {
  * locked: Bool [true]
 
 ##### Transitionクラスのプロパティ/メソッド
-###### クラス共通のメソッド
- * getId()
- * getName()
- * setName(String $name)
- * isActive()
- * addMethod(Object $object)
-
 ###### State/Transitionクラス共通のメソッド
- * getContainer()
- * getCurrentLevel()
+ * getCurrentDepth()
 
 ###### Transitionクラス固有のプロパティ・メソッド
- * trigger()
+ * trigger(Any $param) //パラメータを指定するとguard()とeffect()実行時に渡される
 
 #### Regionクラス
 **Region**クラスはステートマシン図の「領域（Region）」と同等の意味を持ちます。Regionクラスは親要素にひとつのState/Machineインスタンスを指定でき、子要素に複数のStateとTransitionを持ちます。Regionクラスは直交状態を使用しない限り、ユーザーが明示的に使用することはないですが、Machineインスタンスとコンポジット状態（サブ状態を持つ状態）は内部的にRegionインスタンスが追加されます。ですから、Machine/Stateクラスが持つ<i>addState()</i>・<i>addTransition()</i>メソッドは本来Regionクラスの固有メソッドで、アクセスを簡易化するため内部でRegionインスタンスにアクセスしています。
@@ -300,22 +289,16 @@ newMachine.appendRegion(newRegion);
 
 ##### Regionクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
- * data: Object [empty object]
+ * data: JSONデータ型 [Null]
  * props: Object [empty object]
  * methods: Object [empty object]
 
 ##### Regionクラスのプロパティ/メソッド
-
-###### クラス共通のメソッド
- * getId()
- * getName()
- * setName(String $name)
- * isActive()
- * addMethod(Object $object)
-
 ###### Regionクラス固有のメソッド
  * hasHistory(Bool $is_deep [false])
  * getIndex()
+ * getStateById(String $state_name)
+ * getTransitionById(String $transition_name)
  * addState()
  * removeState()
  * addTransition()
@@ -346,7 +329,7 @@ someState.addTransition(anyToTerminator);
 #### ChoicePseudoStateクラス
 選択疑似状態を作成・追加
 ```javascript
-var choice = new FSM.ChoicePseudoState(false, function (model, props, methods) {
+var choice = new FSM.ChoicePseudoState(false, function (param) {
     return anyState;
 });
 someState.addState(choice);
@@ -356,7 +339,7 @@ someState.addTransition(choiceToAny);
 ```
 
 #### SubMachineクラス
-マシンをSubMachineクラスでラップすることで、別のステートマシン図のサブマシン状態として再利用できます。そのためにマシン側と、SubMachineインスタンス側でリンクする入場・退場ポイントを指定する必要があります。
+マシンをSubMachineクラスでラップすることで、別のステートマシン図のサブマシン状態として再利用できます。そのためにマシン側と、SubMachineインスタンス側双方でリンクさせる入場・退場ポイントを指定する必要があります。
 
 ###### SubMachineクラス固有のメソッド
  * addLink(Machine $instance)
@@ -396,28 +379,30 @@ subMachine.deploy();
 ```
 
 ### データストアの取得・設定
-Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式でまとめてデータを指定することができます。Propsは値の変更がないデータ、たとえばユーザーIDなどを格納し、こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録します。methodsオプションに指定します。なお、これらのデータ区分に特に制約はないので、たとえばPropsにメソッドを指定しても問題はありません。
+Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式でまとめてデータを指定することができます。また、get/set()メソッドで値を取得/指定するとき、オブジェクトの階層をスラッシュで区切った"user/id/wiz-code"のようなクエリを使用することができます。さらにwatch()メソッドを使えば、任意のデータが変更されたタイミングで登録されたコールバックを実行できます。一方、PropsはユーザーIDのように基本的にデータが変更されないものを格納します。こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録し、methodsオプションに指定します。なお、インスタンス作成後にPropsとMethodsを追加する場合は、それぞれaddProp()とaddMethod()を通じて追加します。
 
 #### Machine/State/Transition/Regionクラスのデータ操作
- * get( String $key_name )
- * set( String $key_name , Mixed $value )
- * unset( String $key_name )
+ * has ( String $query )
+ * get( String $query )
+ * set( String $query , Mixed $value )
+ * unset( String $query )
  * extend( Object $object ) //{$key1: value1, $key2: $value2...}
  * save()
  * restore()
  * clear()
- * props: Object [empty object]
- * methods: Object [empty object]
+ * watch(String $query, Function $listener)
+ * unwatch(String $query, Function $listener)
+ * addProp( Object $object )
+ * addMethod(Object $object )
 
-#### State/Transitionクラスの親状態に対するデータ操作
- * $get( String $key_name )
- * $set( String $key_name , Mixed $value )
- * $unset( String $key_name )
- * $save()
- * $restore()
- * $clear()
- * $props: Object [empty object]
- * $methods: Object [empty object]
+#### State/Transitionクラスの上位の状態に対するデータ操作
+ * $has( String $query )
+ * $get( String $query )
+ * $set( String $query , Mixed $value )
+ * $unset( String $query )
+ *
+ * $getProp(): Object [empty object]
+ * $getMethod(): Object [empty object]
 
 #### 使用例
 ```javascript
@@ -438,36 +423,37 @@ state1.set('score', 0);
 state1.get('score'); //0
 ```
 #### グループ/全体で共有するデータ
-State/Transitionクラスは上記のインスタンス固有のデータの他、ひとつ上の階層のStateインスタンスのデータストアにアクセスすることができます。こちらは<i>$get()</i>・<i>$set()</i>メソッドでデータ取得・設定します。これによって特定の状態に属する全領域の子要素（State/Transition）をひとつのグループとして共通のデータがやり取りができます。
+State/Transitionクラスは上記のインスタンス固有のデータの他、上位の階層のMachine/State/Regionインスタンスのデータストアにアクセスすることができます。こちらは<i>$get()</i>・<i>$set()</i>メソッドでデータ取得・設定します。$get()メソッドは指定されたクエリでundefined以外の値が取得されるまで、親要素をさかのぼって探索していきます。$set()メソッドも同様に親要素を探索し、undefined以外の値に行き当たったとき、そこで初めて値を設定します。
 
 ```javascript
 state.set('group-id', '12345');
 
 var subState = new FSM.State('sub-state', {
-    entryAction: function (model, props, methods) {
+    entryAction: function () {
         console.log( this.$get('group-id') ); //'12345'
     },
 });
 ```
-システムの最上位であるMachineインスタンスのデータストアはすべてのState/Transitionクラスの子孫要素でアクセス可能です。コールバック関数の引数にModel・Props・Methodsの順でデータが渡されます。
+また、システムの最上位の要素（Machineインスタンス）のデータにアクセスするには、getRoot()メソッドでMachineインスタンスの参照を得る方法があります。
 ```javascript
 machine.props['request-url'] = 'http://abc.abc.abc/';
 machine.methods['hello-world'] = function () { console.log('Hello, World!'); };
 
 var state = new FSM.State('state', {
-    entryAction: function (model, props, methods) {
-        console.log( props['request-url'] ); //'http://abc.abc.abc/'
-        methods['hello-world'](); //Hello, World!
+    entryAction: function () {
+        var root = this.getRoot();
+        console.log( root.props['request-url'] ); //'http://abc.abc.abc/'
+        root.methods['hello-world'](); //Hello, World!
     },
 });
 ```
-注意点として、StateクラスのオプションでループをONにした場合、Doアクティビティのコールバック関数に渡される引数の順番が変更されます。まず第1引数に前後のコールバック関数の実行時間の差分（Delta Time）がミリ秒単位で渡され、それに続いてModel・Props・Methodsが渡されます。Delta Timeはアニメーションなどへの利用を想定しています。
+注意点として、StateクラスのオプションでループをONにした場合、Doアクティビティのコールバック関数に渡される引数の順番が変更されます。まず第1引数に前後のコールバック関数の実行時間の差分（Delta Time）がミリ秒単位で渡され、それに続いて条件によってTransitionインスタンスが渡されます。Delta Timeはアニメーションなどへの利用を想定しています。
 ```javascript
 var state = new FSM.State('state', {
-    doActivity: function (deltaTime, model, props, methods) {
+    doActivity: function (deltaTime, transit) {
         console.log( deltaTime ); //16.6, 16.3, 16.9....
     },
-    
+
     loop: true,
 });
 ```
