@@ -98,6 +98,10 @@ FSM.logger.disable();
  * addProp(Object $object) //{prop_name1: prop1, prop_name2: prop2...}
  * addMethod(Object $object) //{method_name1: method1, method_name2: method2...}
 
+ #### クラス共通のプロパティ
+  * parent: [State/Machineインスタンス]
+  * children: [Array/Object]
+
 #### Machineクラス
 **Machine**クラスはステートマシン図のトップレベルを示すステートマシン（以下マシン）を生成します。マシンは「状態（State）」の一種であり、「領域（Region）」を持つなど**State**と同じように振る舞いますが、Stateクラスと異なりEntryアクションなどがありません。
 
@@ -123,10 +127,6 @@ Machineインスタンスが生成されると、内部的な処理として自�
 
 ###### Machine/State/Transitionクラス共通のプロパティ
  * container: [Regionインスタンス]
-
-###### Machine/State/Transition/Regionクラス共通のプロパティ
- * parent: [State/Machineインスタンス]
- * children: [Array/Object]
 
 ###### Machine/Stateクラス共通のメソッド
  * addState( State $instance1 [, State $...] )
@@ -251,7 +251,7 @@ var transit = new FSM.Transition('new-transit', state1, state2);
 
 //trigger()メソッドを使うことで任意のタイミングで遷移を実行できる
 var state1 = new FSM.State(false, {
-    doActivity: function (model, props, methods) {
+    doActivity: function (transit) {
         .....
         .....
         transit.trigger(); //state2へ遷移を開始
@@ -413,7 +413,7 @@ var state1 = new FSM.State('state1', {
     props: {
         'user-id': 'abcde',
     },
-    entryAction: function (model, props, methods) {
+    entryAction: function (transit) {
         console.log( this.get('score') ); //10000
         console.log( this.props['user-id'] ); //abcde
     },
