@@ -4,9 +4,8 @@ var _ = require('underscore');
 
 var Elem = require('./elem');
 var Region = require('./region');
-var Logger = require('./logger');
+var logger = require('./logger');
 var util = require('./util');
-var logger = new Logger();
 
 var ProtoState = function (name) {
     Elem.call(this, name);

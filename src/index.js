@@ -5,9 +5,9 @@
  * LICENSE: MIT license
  */
 
-var FSM, Logger, State, FinalState, Machine, SubMachine, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region, logger;
+var FSM, logger, State, FinalState, Machine, SubMachine, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
 
-Logger = require('./logger');
+logger = require('./logger');
 State = require('./states').State;
 FinalState = require('./states').FinalState;
 Machine = require('./machines').Machine;
@@ -20,8 +20,6 @@ EntryPointPseudoState = require('./pseudo-states').EntryPointPseudoState;
 ExitPointPseudoState = require('./pseudo-states').ExitPointPseudoState;
 Transition = require('./transition');
 Region = require('./region');
-
-logger = new Logger();
 
 FSM = {
     logger: logger,

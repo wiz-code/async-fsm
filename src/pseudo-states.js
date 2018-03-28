@@ -4,10 +4,9 @@ var _ = require('underscore');
 
 var BaseState = require('./base-state');
 
-var Logger = require('./logger');
+var logger = require('./logger');
 var util = require('./util');
 var mixin = require('./mixin');
-var logger = new Logger();
 
 var PseudoState = function (name) {
     BaseState.call(this, name);

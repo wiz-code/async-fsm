@@ -2,8 +2,7 @@
 
 var _ = require('underscore');
 
-var Logger = require('./logger');
-var logger = new Logger();
+var logger = require('./logger');
 
 var mixin = {
     accessor: {

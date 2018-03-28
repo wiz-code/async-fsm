@@ -4,9 +4,8 @@ var Promise = require('es6-promise').Promise;
 var _ = require('underscore');
 
 var BaseState = require('./base-state');
-var Logger = require('./logger');
+var logger = require('./logger');
 var util = require('./util');
-var logger = new Logger();
 
 var Machine = function (name, options) {
     BaseState.call(this, name, options);

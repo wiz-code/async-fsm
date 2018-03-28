@@ -5,10 +5,9 @@ var _ = require('underscore');
 
 var Subject = require('./subject');
 var Model = require('./model');
-var Logger = require('./logger');
+var logger = require('./logger');
 var util = require('./util');
 var mixin = require('./mixin');
-var logger = new Logger();
 
 var Entity = function (name) {
     Subject.call(this);

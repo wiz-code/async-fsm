@@ -3,9 +3,8 @@
 var _ = require('underscore');
 
 var Elem = require('./elem');
-var Logger = require('./logger');
+var logger = require('./logger');
 var util = require('./util');
-var logger = new Logger();
 
 var Region = function (name, options) {
     Elem.call(this, name);

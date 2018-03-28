@@ -2,9 +2,8 @@
 
 var _ = require('underscore');
 var Observable = require('./observable');
-var Logger = require('./logger');
+var logger = require('./logger');
 
-var logger = new Logger();
 var DELIMITER = '/';
 
 var Model = function (data) {

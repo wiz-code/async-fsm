@@ -9,12 +9,9 @@ var FinalState = require('./states').FinalState;
 var InitialPseudoState = require('./pseudo-states').InitialPseudoState;
 var TerminatePseudoState = require('./pseudo-states').TerminatePseudoState;
 
-var Logger = require('./logger');
+var logger = require('./logger');
 var util = require('./util');
 var mixin = require('./mixin');
-var logger = new Logger();
-
-
 
 var Transition = function (name, source, target, options) {
     Elem.call(this, name);
