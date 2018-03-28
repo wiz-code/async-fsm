@@ -329,7 +329,7 @@ someState.addTransition(anyToTerminator);
 #### ChoicePseudoStateクラス
 選択疑似状態を作成・追加
 ```javascript
-var choice = new FSM.ChoicePseudoState(false, function (param) {
+var choice = new FSM.ChoicePseudoState(false, function (transit) {
     return anyState;
 });
 someState.addState(choice);
@@ -398,9 +398,8 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
 #### State/Transitionクラスの上位の状態に対するデータ操作
  * $has( String $query )
  * $get( String $query )
- * $set( String $query , Mixed $value )
+ * $set( String $query, Mixed $value ) または $set( Object $object )
  * $unset( String $query )
- *
  * $getProp(): Object [empty object]
  * $getMethod(): Object [empty object]
 
@@ -421,6 +420,13 @@ var state1 = new FSM.State('state1', {
 
 state1.set('score', 0);
 state1.get('score'); //0
+
+state1.set({
+    score: {
+        stage1: 30000
+    }
+});
+state1.get('score/stage1'); //30000
 ```
 #### グループ/全体で共有するデータ
 State/Transitionクラスは上記のインスタンス固有のデータの他、上位の階層のMachine/State/Regionインスタンスのデータストアにアクセスすることができます。こちらは<i>$get()</i>・<i>$set()</i>メソッドでデータ取得・設定します。$get()メソッドは指定されたクエリでundefined以外の値が取得されるまで、親要素をさかのぼって探索していきます。$set()メソッドも同様に親要素を探索し、undefined以外の値に行き当たったとき、そこで初めて値を設定します。

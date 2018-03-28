@@ -126,10 +126,13 @@ ChoicePseudoState.prototype = _.create(PseudoState.prototype, {
     _cname: 'ChoicePseudoState',
 
     _activate: function () {
+        var target, transit;
+        transit = util.findRelatedTransition(this);
+
         this._status = 'active';
         logger.info('ChoicePseudoStateインスタンス"' + this._name + '"がアクティブ化されました。');
 
-        target = this._condition();
+        target = this._condition(transit);
         if (!(target instanceof BaseState)) {
             logger.error('遷移先のStateインスタンスが存在しません。');
         }
