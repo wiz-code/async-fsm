@@ -273,6 +273,7 @@ var state1 = new FSM.State(false, {
  * getCurrentDepth()
 
 ###### Transitionクラス固有のプロパティ・メソッド
+ * test() //トリガが発火可能か確認するメソッド
  * trigger(Any $param) //パラメータを指定するとguard()とeffect()実行時に渡される
 
 #### Regionクラス
@@ -379,7 +380,7 @@ subMachine.deploy();
 ```
 
 ### データストアの取得・設定
-Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式でまとめてデータを指定することができます。また、get/set()メソッドで値を取得/指定するとき、オブジェクトの階層をスラッシュで区切った"user/id/wiz-code"のようなクエリを使用することができます。さらにwatch()メソッドを使えば、任意のデータが変更されたタイミングで登録されたコールバックを実行できます。一方、PropsはユーザーIDのように基本的にデータが変更されないものを格納します。こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録し、methodsオプションに指定します。なお、インスタンス作成後にPropsとMethodsを追加する場合は、それぞれaddProp()とaddMethod()を通じて追加します。
+Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式（またはオブジェクト）でまとめてデータを指定することができます。また、get/set()メソッドで値を取得/指定するとき、オブジェクトの階層をスラッシュで区切った"user/id/wiz-code"のようなクエリを使用することができます。さらにwatch()メソッドを使えば、任意のデータが変更されたタイミングで登録されたコールバックを実行できます。一方、PropsはユーザーIDのように基本的にデータが変更されないものを格納します。こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録し、methodsオプションに指定します。なお、インスタンス作成後にPropsとMethodsを追加する場合は、それぞれaddProp()とaddMethod()を通じて追加します。
 
 #### Machine/State/Transition/Regionクラスのデータ操作
  * has ( String $query )
