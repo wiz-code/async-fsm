@@ -125,7 +125,7 @@ Model.prototype = _.create(Observable.prototype, {
             this._data = _extend(this._data, value);
 
         } else {
-            reference = _getValue(propNameList, this._data);console.log('reference', reference);
+            reference = _getValue(propNameList, this._data);
             if (_.isObject(value) && !_.isFunction(value)) {
                 reference[lastPropName] = {};
                 _extend(reference[lastPropName], value);
