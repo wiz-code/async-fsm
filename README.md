@@ -380,7 +380,7 @@ subMachine.deploy();
 ```
 
 ### データストアの取得・設定
-Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式（またはオブジェクト）でまとめてデータを指定することができます。また、get/set()メソッドで値を取得/指定するとき、オブジェクトの階層をスラッシュで区切った"user/id/wiz-code"のようなクエリを使用することができます。さらにwatch()メソッドを使えば、任意のデータが変更されたタイミングで登録されたコールバックを実行できます。一方、PropsはユーザーIDのように基本的にデータが変更されないものを格納します。こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録し、methodsオプションに指定します。なお、インスタンス作成後にPropsとMethodsを追加する場合は、それぞれaddProp()とaddMethod()を通じて追加します。
+Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式でまとめてデータを指定することができます。また、get/set()メソッドで値を取得/指定するとき、オブジェクトの階層をスラッシュで区切った"user/id/wiz-code"のようなクエリを使用することができます。さらにwatch()メソッドを使えば、任意のデータが変更されたタイミングで登録されたコールバックを実行できます。一方、PropsはユーザーIDのように基本的にデータが変更されないものを格納します。こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録し、methodsオプションに指定します。なお、インスタンス作成後にPropsとMethodsを追加する場合は、それぞれaddProp()とaddMethod()を通じて追加します。
 
 #### Machine/State/Transition/Regionクラスのデータ操作
  * has ( String $query )
@@ -428,6 +428,14 @@ state1.set({
     }
 });
 state1.get('score/stage1'); //30000
+
+state1.watch('score/stage1', function (e) {
+    //e.event, e.target, e.currentTarget, e.value, e.oldValue
+
+    if (e.value > 50000) {
+        console.log('High Score!!')
+    }
+});
 ```
 #### グループ/全体で共有するデータ
 State/Transitionクラスは上記のインスタンス固有のデータの他、上位の階層のMachine/State/Regionインスタンスのデータストアにアクセスすることができます。こちらは<i>$get()</i>・<i>$set()</i>メソッドでデータ取得・設定します。$get()メソッドは指定されたクエリでundefined以外の値が取得されるまで、親要素をさかのぼって探索していきます。$set()メソッドも同様に親要素を探索し、undefined以外の値に行き当たったとき、そこで初めて値を設定します。
