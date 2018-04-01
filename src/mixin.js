@@ -47,11 +47,11 @@ var mixin = {
         },
 
         watch: function (query, listener) {
-            this.model.observe(query, listener);
+            this.model.watch(query, listener);
         },
 
         unwatch: function (query, listener) {
-            this.model.unobserve(query, listener);
+            this.model.unwatch(query, listener);
         },
     },
 

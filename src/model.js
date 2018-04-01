@@ -36,7 +36,7 @@ Model.prototype = _.create(Observable.prototype, {
 
     set: function (query, value) {
         var oldValue, event;
-        if (_.isObject(query) && !_.isFunction(query)) {
+        if (!_.isString(query)) {
             value = query;
             query = '/';
         }
@@ -93,7 +93,7 @@ Model.prototype = _.create(Observable.prototype, {
 
     _has: function (query) {
         var result;
-        query = !_.isUndefined(query) ? query : '';
+        query = !_.isUndefined(query) ? query : '/';
 
         try {
             result = this._get(query);
@@ -181,6 +181,24 @@ Model.prototype = _.create(Observable.prototype, {
             this.notifyListeners(DELIMITER, object);
         }
     },
+
+    watch: function (query, listener) {
+        if (_.isFunction(query)) {
+            listener = query;
+            query = '/';
+        }
+        query = _normalizeQuery(query);
+        this.observe(query, listener);
+    },
+
+    unwatch: function (query, listener) {
+        if (_.isFunction(query)) {
+            listener = query;
+            query = '/';
+        }
+        query = _normalizeQuery(query);
+        this.unobserve(query, listener);
+    },
 });
 
 function _extend(destination, source) {
@@ -254,6 +272,18 @@ function _getValue(list, data) {
     }
 
     return data;
+}
+
+function _normalizeQuery(query) {
+    if (!_.isString(query)) {
+        logger.error('クエリは文字列で指定してください。')
+    }
+
+    if (query !== '/') {
+        query = query.replace(/^\/|\/$/g, '');
+    }
+
+    return query;
 }
 
 module.exports = Model;
