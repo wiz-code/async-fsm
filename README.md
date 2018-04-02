@@ -14,7 +14,7 @@
 ### ブラウザで使う場合（Browser）
 #### 依存ファイルをCDN経由で取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/11d93c8a/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/1d158e03/dist/async-fsm.min.js"></script>
 <script>
 var FSM = require('async-fsm');
 ....
@@ -95,8 +95,8 @@ FSM.logger.disable();
  * getName()
  * setName(String $name)
  * isActive()
- * addProp(Object $object) //{prop_name1: prop1, prop_name2: prop2...}
- * addMethod(Object $object) //{method_name1: method1, method_name2: method2...}
+ * addProp(Object $object) // {prop_name1: prop1, prop_name2: prop2...}
+ * addMethod( Object $object [, Object $context] ) // {method_name1: method1, method_name2: method2...}
 
  #### クラス共通のプロパティ
   * parent: [State/Machineインスタンス]

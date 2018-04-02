@@ -42,8 +42,9 @@ var mixin = {
             this.model.addProp(object);
         },
 
-        addMethod: function (object) {
-            this.model.addMethod(object, this);
+        addMethod: function (object, context) {
+            context = !_.isUndefined(context) ? context : this;
+            this.model.addMethod(object, context);
         },
 
         watch: function (query, listener) {

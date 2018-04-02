@@ -85,10 +85,7 @@ Model.prototype = _.create(Observable.prototype, {
 
     addMethod: function (object, context) {
         _validate(object, 'function');
-        _.each(object, _.bind(function (value, key) {
-            value = _.bind(value, this);
-            this.methods[key] = value;
-        }, context));
+        _addMethod(this.methods, object, context);
     },
 
     _has: function (query) {
@@ -229,6 +226,11 @@ function _validate(value, required) {
         case 'function':
         _.each(value, function (val) {
             if (!_.isFunction(val)) {
+                if (_.isObject(val)) {
+                    _validate(val, required);
+                    return;
+                }
+
                 logger.error('Function以外はメソッドに登録できません。propsプロパティに登録してください。');
             }
         });
@@ -242,6 +244,20 @@ function _validate(value, required) {
         });
         break;
     }
+}
+
+function _addMethod(dest, object, context) {
+    _.each(object, function (value, key) {
+        var method;
+        if (!_.isFunction(value)) {
+            dest[key] = {};
+            _addMethod(dest[key], value, context);
+
+        } else {
+            method = _.bind(value, context);
+            dest[key] = method;
+        }
+    });
 }
 
 function _parseQuery(query) {
