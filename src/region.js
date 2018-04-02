@@ -46,6 +46,16 @@ Region.prototype = _.create(Elem.prototype, {
 
     _cname: 'Region',
 
+    setName: function (name) {
+        this._name = name;
+        if (!this._originalName) {
+            this._originalName = name;
+            this._setDefaultStateName();
+        }
+
+        return name;
+    },
+
     hasHistory: function (deep) {
         return util.isFalsy(deep) ? !_.isNull(this._historyPseudo) :
             !_.isNull(this._historyPseudo) && this._historyPseudo._isDeep;
@@ -59,6 +69,18 @@ Region.prototype = _.create(Elem.prototype, {
         }
 
         return result;
+    },
+
+    getStateByName: function (stateName) {
+        return _.find(this.children.states, function (state) {
+            return state._name === stateName;
+        });
+    },
+
+    getTransitionByName: function (transitionName) {
+        return _.find(this.children.transitions, function (transit) {
+            return transit._name === transitionName;
+        });
     },
 
     getStateById: function (stateId) {
@@ -216,7 +238,7 @@ Region.prototype = _.create(Elem.prototype, {
             transit.addObserver('source', transit.source);
             transit.addObserver('target', transit.target);
 
-            if (transit._name === transit._id) {
+            if (!transit._originalName) {
                 transit._name = 'transit-from-' + transit.source._name + '-to-' + transit.target._name;
             }
 
@@ -255,6 +277,10 @@ Region.prototype = _.create(Elem.prototype, {
 
                 transit.removeObserver('source', transit.source);
                 transit.removeObserver('target', transit.target);
+
+                if (!transit._originalName) {
+                    transit._name = transit._id;
+                }
 
                 transit.container = null;
                 transit.removeObserver('container', this);

@@ -13,7 +13,15 @@ var Entity = function (name) {
     Subject.call(this);
 
     this._id = uuidv4();
-    this._name = !util.isFalsy(name) ? name : this._id;
+
+    if (!util.isFalsy(name)) {
+        this._name = this._originalName = name;
+
+    } else {
+        this._name = this._id;
+        this._originalName = false;
+    }
+
     this._type = 'entity';
     this._status = 'inactive';
 
@@ -35,6 +43,10 @@ Entity.prototype = _.create(Subject.prototype, _.extend({
 
     setName: function (name) {
         this._name = name;
+        if (!this._originalName) {
+            this._originalName = name;
+        }
+        
         return name;
     },
 

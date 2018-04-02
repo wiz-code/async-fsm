@@ -44,6 +44,12 @@ ProtoState.prototype = _.create(Elem.prototype, {
         return result;
     },
 
+    getRegionByName: function (regionName) {
+        return _.find(this.children, function (region) {
+            return region._name === regionName;
+        });
+    },
+
     getRegionById: function (regionId) {
         return _.find(this.children, function (region) {
             return region._id === regionId;
@@ -190,6 +196,11 @@ ProtoState.prototype = _.create(Elem.prototype, {
         this.addObserver('children', region);
         region.addObserver('parent', this);
 
+        if (!region._originalName) {
+            region._name = 'region-index-' + region.getIndex() + '-of-' + this._name;
+            region._setDefaultStateName();
+        }
+
         region._refresh(this._depth);
 
         return region;
@@ -224,6 +235,11 @@ ProtoState.prototype = _.create(Elem.prototype, {
 
         this.removeObserver('children', region);
         region.removeObserver('parent', this);
+
+        if (!region._originalName) {
+            region._name = this._id;
+            region._setDefaultStateName();
+        }
 
         return region;
     },

@@ -14,7 +14,7 @@
 ### ブラウザで使う場合（Browser）
 #### 依存ファイルをCDN経由で取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/27ff20d7/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/11d93c8a/dist/async-fsm.min.js"></script>
 <script>
 var FSM = require('async-fsm');
 ....
@@ -193,6 +193,7 @@ newMachine.addState(newState);
 ###### Machine/Stateクラス共通のメソッド
  * getRegion(Integer $egion_index)
  * getRoot()
+ * getRegionByName(String $region_name)
  * getRegionById(String $region_id)
  * addState( State $instance1 [, State $...] )
  * addTransition( Transition $instance1 [, Transition $...] )
@@ -298,8 +299,10 @@ newMachine.appendRegion(newRegion);
 ###### Regionクラス固有のメソッド
  * hasHistory(Bool $is_deep [false])
  * getIndex()
- * getStateById(String $state_name)
- * getTransitionById(String $transition_name)
+ * getStateByName(String $state_name)
+ * getTransitionByName(String $transition_name)
+ * getStateById(String $state_id)
+ * getTransitionById(String $transition_id)
  * addState()
  * removeState()
  * addTransition()
