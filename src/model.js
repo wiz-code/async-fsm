@@ -9,10 +9,10 @@ var DELIMITER = '/';
 var Model = function (data) {
     Observable.call(this);
 
-    this._data = null;
+    this._data = this._savedData = null;
     this.props = {};
     this.methods = {};
-    this._cache = null;
+    this._cache = {}; //TODO
 
     if (_.isObject(data) && !_.isFunction(data)) {
         this.set(data);
@@ -25,28 +25,31 @@ Model.prototype = _.create(Observable.prototype, {
     _cname: 'Model',
 
     has: function (query) {
-        var result = !_.isUndefined(this._has(query));
+        var result = !_.isUndefined(this.get(query));
         return result;
     },
 
     get: function (query) {
-        var result = this._has(query)
+        var result;
+        query = _normalizeQuery(query);
+        result = this._test('_get', query);
         return result;
     },
 
     set: function (query, value) {
         var oldValue, event;
-        if (!_.isString(query)) {
+        if (_.toArray(arguments).length < 2) {
             value = query;
-            query = '/';
+            query = DELIMITER;
         }
 
-        oldValue = this.get(query);
+        query = _normalizeQuery(query);
+        oldValue = this._test('_get', query);
         if (_.isEqual(oldValue, value)) {
             return value;
         }
 
-        _validate(value, 'not-function');
+        _validate(value, 'json');
         this._set(query, value);
         event = oldValue == null ? 'create' : 'update';
         this._bubbling(event, query, value, oldValue);
@@ -55,7 +58,9 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     unset: function (query) {
-        var value = this.get(query);
+        var value;
+        query = _normalizeQuery(query);
+        value = this._test('_get', query);
         if (!_.isUndefined(value)) {
             this._unset(query);
             this._bubbling('delete', query, value);
@@ -64,18 +69,17 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     save: function () {
-        this._cache = _extend(this._cache, this._data);
+        this._savedData = _extend(this._savedData, this._data);
     },
 
     restore: function () {
-        if (!_.isNull(this._cache)) {
-            this._data = _extend(null, this._cache);
+        if (!_.isNull(this._savedData)) {
+            this._data = _extend(null, this._savedData);
         }
     },
 
     clear: function () {
-        this._data = null;
-        this._cache = null;
+        this._data = this._savedData = null;
     },
 
     addProp: function (object) {
@@ -88,12 +92,11 @@ Model.prototype = _.create(Observable.prototype, {
         _addMethod(this.methods, object, context);
     },
 
-    _has: function (query) {
+    _test: function (method, param) {
         var result;
-        query = !_.isUndefined(query) ? query : '/';
 
         try {
-            result = this._get(query);
+            result = this[method](param);
 
         } catch (e) {}
 
@@ -103,8 +106,8 @@ Model.prototype = _.create(Observable.prototype, {
     _get: function (query) {
         var propNameList, value;
         propNameList = _parseQuery(query);
+        value = _search(propNameList, this._data);
 
-        value = _getValue(propNameList, this._data);
         return value;
     },
 
@@ -114,15 +117,15 @@ Model.prototype = _.create(Observable.prototype, {
         propNameList = _parseQuery(query);
         lastPropName = propNameList.pop();
 
-        if (!_containerExists(propNameList, this._data)) {
+        if (!_exists(propNameList, this._data)) {
             logger.error('クエリに対応するデータ構造が存在しません。');
         }
 
-        if (_.isUndefined(lastPropName)) {
+        if (!propNameList.length) {
             this._data = _extend(this._data, value);
 
         } else {
-            reference = _getValue(propNameList, this._data);
+            reference = _search(propNameList, this._data);
             if (_.isObject(value) && !_.isFunction(value)) {
                 reference[lastPropName] = {};
                 _extend(reference[lastPropName], value);
@@ -140,11 +143,11 @@ Model.prototype = _.create(Observable.prototype, {
         propNameList = _parseQuery(query);
         lastPropName = propNameList.pop();
 
-        if (!_containerExists(propNameList, this._data)) {
+        if (!_exists(propNameList, this._data)) {
             logger.error('クエリに対応するデータ構造が存在しません。');
         }
 
-        reference = _getValue(propNameList, this._data);
+        reference = _search(propNameList, this._data);
         cache = reference[lastPropName];
         delete reference[lastPropName];
 
@@ -156,7 +159,7 @@ Model.prototype = _.create(Observable.prototype, {
         propNameList = _parseQuery(query);
         object = {
             event: event,
-            currentTarget: null,
+            currentTarget: '',
             target: query,
             value: value,
             oldValue: oldValue,
@@ -182,7 +185,7 @@ Model.prototype = _.create(Observable.prototype, {
     watch: function (query, listener) {
         if (_.isFunction(query)) {
             listener = query;
-            query = '/';
+            query = DELIMITER;
         }
         query = _normalizeQuery(query);
         this.observe(query, listener);
@@ -191,7 +194,7 @@ Model.prototype = _.create(Observable.prototype, {
     unwatch: function (query, listener) {
         if (_.isFunction(query)) {
             listener = query;
-            query = '/';
+            query = DELIMITER;
         }
         query = _normalizeQuery(query);
         this.unobserve(query, listener);
@@ -205,6 +208,7 @@ function _extend(destination, source) {
         if (_.isObject(value) && !_.isFunction(value)) {
             destination[key] = _.isArray(value) ? [] : {};
             _extend(destination[key], value);
+
         } else {
             destination[key] = value;
         }
@@ -214,36 +218,53 @@ function _extend(destination, source) {
 }
 
 function _validate(value, required) {
-    if (_.isUndefined(required)) {
-        return;
-    }
-
-    if (!_.isObject(value)) {
-        value = [value];
-    }
+    var result = false;
 
     switch (required) {
-        case 'function':
-        _.each(value, function (val) {
-            if (!_.isFunction(val)) {
-                if (_.isObject(val)) {
-                    _validate(val, required);
-                    return;
-                }
+        case 'json':
+        if (_.isString(value) || _.isNumber(value) ||
+            _.isBoolean(value) || _.isNull(value)) {
+            result = true;
 
-                logger.error('Function以外はメソッドに登録できません。propsプロパティに登録してください。');
-            }
-        });
+        } else if (_.isArray(value) || (_.isObject(value) && !_.isFunction(value))) {
+            result = _.every(value, function (v) {
+                return _validate(v, required);
+            });
+
+        } else {
+            logger.error('JSONデータ型以外はデータに登録できません。');
+        }
+
+        break;
+
+        case 'function':
+        if (_.isFunction(value)) {
+            result = true;
+
+        } else if (_.isArray(value) || (_.isObject(value) && !_.isFunction(value))) {
+            result = _.every(value, function (v) {
+                return _validate(v, required);
+            });
+        } else {
+            logger.error('Function以外はメソッドに登録できません。');
+        }
         break;
 
         case 'not-function':
-        _.each(value, function (val) {
-            if (_.isFunction(val)) {
-                logger.error('Functionはプロパティに登録できません。methodsプロパティに登録してください。');
-            }
-        });
+        if (!_.isFunction(value)) {
+            result = true;
+
+        } else if (_.isArray(value) || (_.isObject(value) && !_.isFunction(value))) {
+            result = _.every(value, function (v) {
+                return _validate(v, required);
+            });
+        } else {
+            logger.error('Functionはプロパティに登録できません。');
+        }
         break;
     }
+
+    return result;
 }
 
 function _addMethod(dest, object, context) {
@@ -261,33 +282,29 @@ function _addMethod(dest, object, context) {
 }
 
 function _parseQuery(query) {
-    if (!_.isString(query)) {
-        logger.error('クエリは文字列で指定してください。')
-    }
-    return _.compact(query.split(DELIMITER));
+    var result = _.compact(query.split(DELIMITER));
+    return result;
 }
 
-function _containerExists(params, data) {
-    var check = _.every(params, function (id) {
+function _exists(list, data) {
+    var result = _.every(list, function (propName) {
         if (_.isArray(data) || (_.isObject(data) && !_.isFunction(data))) {
-            if (data.hasOwnProperty(id)) {
-                data = data[id];
+            if (data.hasOwnProperty(propName)) {
+                data = data[propName];
                 return true;
             }
         }
     });
 
-    return check;
+    return result;
 }
 
-function _getValue(list, data) {
-    var propName;
-    while (list.length) {
-        propName = list.shift();
-        data = data[propName];
-    }
+function _search(list, data) {
+    var result = _.reduce(list, function (object, propName) {
+        return object[propName];
+    }, data);
 
-    return data;
+    return result;
 }
 
 function _normalizeQuery(query) {
@@ -295,7 +312,7 @@ function _normalizeQuery(query) {
         logger.error('クエリは文字列で指定してください。')
     }
 
-    if (query !== '/') {
+    if (query !== DELIMITER) {
         query = query.replace(/^\/|\/$/g, '');
     }
 
