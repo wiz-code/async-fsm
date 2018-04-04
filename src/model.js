@@ -38,7 +38,7 @@ Model.prototype = _.create(Observable.prototype, {
 
     set: function (query, value) {
         var oldValue, event;
-        if (_.toArray(arguments).length < 2) {
+        if (_.isUndefined(value)) {
             value = query;
             query = DELIMITER;
         }
