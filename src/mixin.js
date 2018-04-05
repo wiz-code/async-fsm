@@ -80,6 +80,14 @@ var mixin = {
         $getMethod: function (methodName) {
             return $getMethod(methodName, this);
         },
+
+        $setProp: function (propName, prop) {
+            return $setProp(propName, prop, this);
+        },
+
+        $setMethod: function (methodName, method) {
+            return $setMethod(methodName, method, this);
+        },
     },
 
     disable: {
@@ -99,7 +107,7 @@ var mixin = {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
-        extend: function (data) {
+        extend: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
@@ -115,27 +123,34 @@ var mixin = {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
-        addProp: function (object) {
+        addProp: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
-        addMethod: function (object) {
+        addMethod: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
-        watch: function (query, listener) {
+        watch: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
-        unwatch: function (query, listener) {
+        unwatch: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
-        $getProp: function (query, listener) {
+        $getProp: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
-        $getMethod: function (query, listener) {
+        $getMethod: function () {
+            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
+        },
+        $setProp: function () {
+            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
+        },
+
+        $setMethod: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
@@ -277,39 +292,57 @@ function $unset(query, elem) {
 }
 
 function $getProp(propName, elem) {
-    var prop, parent;
+    var prop, next;
     prop = elem.props[propName];
     if (_.isUndefined(prop)) {
-        if (elem._type === 'region') {
-            parent = elem.parent;
-            if (!_.isNull(parent)) {
-                prop = $getProp(propName, parent);
-            }
-        } else {
-            if (!_.isNull(elem.container)) {
-                prop = $getProp(propName, elem.container);
-            }
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            prop = $getProp(propName, next);
         }
     }
     return prop;
 }
 
+function $setProp(propName, value, elem) {
+    var prop, next;
+    prop = elem.props[propName];
+    if (!_.isUndefined(prop)) {
+        elem.props[propName] = value;
+
+    } else {
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            $setProp(propName, value, next);
+        }
+    }
+    return value;
+}
+
 function $getMethod(methodName, elem) {
-    var method, parent;
+    var method, next;
     method = elem.methods[methodName];
     if (_.isUndefined(method)) {
-        if (elem._type === 'region') {
-            parent = elem.parent;
-            if (!_.isNull(parent)) {
-                method = $getMethod(methodName, parent);
-            }
-        } else {
-            if (!_.isNull(elem.container)) {
-                method = $getMethod(methodName, elem.container);
-            }
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            method = $getMethod(methodName, next);
         }
     }
     return method;
+}
+
+function $setMethod(methodName, value, elem) {
+    var method, next;
+    method = elem.methods[methodName];
+    if (!_.isUndefined(method)) {
+        elem.methods[methodName] = value;
+
+    } else {
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            $setMethod(methodName, value, next);
+        }
+    }
+    return value;
 }
 
 module.exports = mixin;
