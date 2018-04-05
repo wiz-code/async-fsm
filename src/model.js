@@ -5,6 +5,8 @@ var Observable = require('./observable');
 var logger = require('./logger');
 
 var DELIMITER = '/';
+var toString = Object.prototype.toString;
+var getPrototypeOf = Object.getPrototypeOf;
 
 var Model = function (data) {
     Observable.call(this);
@@ -261,6 +263,7 @@ function _validate(value, required) {
             });
         } else if (!_.isFunction(value)) {
             result = true;
+
         } else {
             logger.error('Functionはプロパティに登録できません。');
         }
@@ -343,7 +346,16 @@ function _normalizeQuery(query) {
 }
 
 function _isObject(obj) {
-    return Object.prototype.toString.call(obj) === '[object Object]';
+    var result, proto;
+    result = false;
+    if (toString.call(obj) === '[object Object]') {
+        proto = obj;
+        while (!_.isNull(getPrototypeOf(proto))) {
+            proto = getPrototypeOf(proto);
+        }
+        result = getPrototypeOf(obj) === proto;
+    }
+    return result;
 }
 
 module.exports = Model;
