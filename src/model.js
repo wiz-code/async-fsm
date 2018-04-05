@@ -115,7 +115,6 @@ Model.prototype = _.create(Observable.prototype, {
         var propNameList, lastPropName, reference;
 
         propNameList = _parseQuery(query);
-        lastPropName = propNameList.pop();
 
         if (!_exists(propNameList, this._data)) {
             logger.error('クエリに対応するデータ構造が存在しません。');
@@ -125,6 +124,7 @@ Model.prototype = _.create(Observable.prototype, {
             this._data = _extend(this._data, value);
 
         } else {
+            lastPropName = propNameList.pop();
             reference = _search(propNameList, this._data);
             if (_.isObject(value) && !_.isFunction(value)) {
                 reference[lastPropName] = {};
