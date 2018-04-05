@@ -126,7 +126,7 @@ Model.prototype = _.create(Observable.prototype, {
         } else {
             lastPropName = propNameList.pop();
             reference = _search(propNameList, this._data);
-            if (_.isObject(value) && !_.isFunction(value)) {
+            if (_isObject(value)) {
                 reference[lastPropName] = {};
                 _extend(reference[lastPropName], value);
 
@@ -205,8 +205,12 @@ function _extend(destination, source) {
     destination = destination || (_.isArray(source) ? [] : {});
 
     _.each(source, function (value, key) {
-        if (_.isObject(value) && !_.isFunction(value)) {
-            destination[key] = _.isArray(value) ? [] : {};
+        if (_.isArray(value)) {
+            destination[key] = [];
+            _extend(destination[key], value);
+
+        } else if (_isObject(value)) {
+            destination[key] = {};
             _extend(destination[key], value);
 
         } else {
@@ -226,7 +230,7 @@ function _validate(value, required) {
             _.isBoolean(value) || _.isNull(value)) {
             result = true;
 
-        } else if (_.isArray(value) || (_.isObject(value) && !_.isFunction(value))) {
+        } else if (_.isArray(value) || _isObject(value)) {
             result = _.every(value, function (v) {
                 return _validate(v, required);
             });
@@ -241,7 +245,7 @@ function _validate(value, required) {
         if (_.isFunction(value)) {
             result = true;
 
-        } else if (_.isArray(value) || (_.isObject(value) && !_.isFunction(value))) {
+        } else if (_.isArray(value) || _isObject(value)) {
             result = _.every(value, function (v) {
                 return _validate(v, required);
             });
@@ -251,13 +255,12 @@ function _validate(value, required) {
         break;
 
         case 'not-function':
-        if (!_.isFunction(value)) {
-            result = true;
-
-        } else if (_.isArray(value) || (_.isObject(value) && !_.isFunction(value))) {
+        if (_.isArray(value) || _isObject(value)) {
             result = _.every(value, function (v) {
                 return _validate(v, required);
             });
+        } else if (!_.isFunction(value)) {
+            result = true;
         } else {
             logger.error('Functionはプロパティに登録できません。');
         }
@@ -273,10 +276,10 @@ function _addProp(dest, object) {
             dest[key] = [];
             _addProp(dest[key], value);
 
-        } else if (_.isObject(value)) {
+        } else if (_isObject(value)) {
             dest[key] = {};
             _addProp(dest[key], value);
-            
+
         } else {
             dest[key] = value;
         }
@@ -286,7 +289,11 @@ function _addProp(dest, object) {
 function _addMethod(dest, object, context) {
     _.each(object, function (value, key) {
         var method;
-        if (!_.isFunction(value)) {
+        if (_.isArray(value)) {
+            dest[key] = [];
+            _addMethod(dest[key], value, context);
+
+        } else if (_isObject(value)) {
             dest[key] = {};
             _addMethod(dest[key], value, context);
 
@@ -333,6 +340,10 @@ function _normalizeQuery(query) {
     }
 
     return query;
+}
+
+function _isObject(obj) {
+    return Object.prototype.toString.call(obj) === '[object Object]';
 }
 
 module.exports = Model;

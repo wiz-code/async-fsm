@@ -305,6 +305,10 @@ function $getProp(propName, elem) {
 
 function $setProp(propName, value, elem) {
     var prop, next;
+    if (_.isFunction(value)) {
+        logger.error('Functionはプロパティに登録できません。');
+    }
+
     prop = elem.props[propName];
     if (!_.isUndefined(prop)) {
         elem.props[propName] = value;
@@ -332,6 +336,10 @@ function $getMethod(methodName, elem) {
 
 function $setMethod(methodName, value, elem) {
     var method, next;
+    if (!_.isFunction(value)) {
+        logger.error('Function以外はメソッドに登録できません。');
+    }
+
     method = elem.methods[methodName];
     if (!_.isUndefined(method)) {
         elem.methods[methodName] = value;
