@@ -84,7 +84,7 @@ Model.prototype = _.create(Observable.prototype, {
 
     addProp: function (object) {
         _validate(object, 'not-function');
-        this.props = _extend(this.props, object);
+        _addProp(this.props, object);
     },
 
     addMethod: function (object, context) {
@@ -265,6 +265,22 @@ function _validate(value, required) {
     }
 
     return result;
+}
+
+function _addProp(dest, object) {
+    _.each(object, function (value, key) {
+        if (_.isArray(value)) {
+            dest[key] = [];
+            _addProp(dest[key], value);
+
+        } else if (_.isObject(value)) {
+            dest[key] = {};
+            _addProp(dest[key], value);
+            
+        } else {
+            dest[key] = value;
+        }
+    });
 }
 
 function _addMethod(dest, object, context) {
