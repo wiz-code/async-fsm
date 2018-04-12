@@ -12,8 +12,8 @@ var Model = function (data) {
     Observable.call(this);
 
     this._data = this._savedData = null;
-    this.props = {};
-    this.methods = {};
+    this.props = null;
+    this.methods = null;
     this._cache = {}; //TODO
 
     if (_.isObject(data) && !_.isFunction(data)) {
@@ -34,7 +34,7 @@ Model.prototype = _.create(Observable.prototype, {
     get: function (query) {
         var result;
         query = _normalizeQuery(query);
-        result = this._test('_get', query);
+        result = this._test('_get', query, this._data);
         return result;
     },
 
@@ -46,13 +46,13 @@ Model.prototype = _.create(Observable.prototype, {
         }
 
         query = _normalizeQuery(query);
-        oldValue = this._test('_get', query);
+        oldValue = this._test('_get', query, this._data);
         if (_.isEqual(oldValue, value)) {
             return value;
         }
 
         _validate(value, 'json');
-        this._set(query, value);
+        this._set(query, value, '_data');
         event = oldValue == null ? 'create' : 'update';
         this._bubbling(event, query, value, oldValue);
 
@@ -62,7 +62,7 @@ Model.prototype = _.create(Observable.prototype, {
     unset: function (query) {
         var value;
         query = _normalizeQuery(query);
-        value = this._test('_get', query);
+        value = this._test('_get', query, this._data);
         if (!_.isUndefined(value)) {
             this._unset(query);
             this._bubbling('delete', query, value);
@@ -86,48 +86,92 @@ Model.prototype = _.create(Observable.prototype, {
 
     addProp: function (object) {
         _validate(object, 'not-function');
-        _addProp(this.props, object);
+        this.props = _extend(this.props, object);
+        return this.props;
     },
 
     addMethod: function (object, context) {
-        _validate(object, 'function');
-        _addMethod(this.methods, object, context);
+        _validate(object, 'function-only');
+        this.methods = _extendMethod(this.methods, object, context);
+        return this.methods;
     },
 
-    _test: function (method, param) {
+    getProp: function (query) {
         var result;
+        query = _normalizeQuery(query);
+        result = this._test('_get', query, this.props);
+        return result;
+    },
+
+    setProp: function (query, prop) {
+        query = _normalizeQuery(query);
+        if (_.isUndefined(prop)) {
+            prop = query;
+            query = DELIMITER;
+        }
+
+        _validate(prop, 'not-function');
+        this._set(query, prop, 'props');
+
+        return prop;
+    },
+
+    getMethod: function (query) {
+        var result;
+        query = _normalizeQuery(query);
+        result = this._test('_get', query, this.methods);
+        return result;
+    },
+
+    setMethod: function (query, method, context) {
+        query = _normalizeQuery(query);
+        if (_.isUndefined(method)) {
+            method = query;
+            query = DELIMITER;
+        }
+
+        _validate(method, 'function-only');
+        this._setMethod(query, method, context);
+
+        return method;
+    },
+
+    _test: function (method) {
+        var params, result;
+        params = _.toArray(arguments).slice(1);
 
         try {
-            result = this[method](param);
+            result = this[method].apply(null, params);
 
         } catch (e) {}
 
         return result;
     },
 
-    _get: function (query) {
+    _get: function (query, data) {
         var propNameList, value;
         propNameList = _parseQuery(query);
-        value = _search(propNameList, this._data);
+        value = _search(propNameList, data);
 
         return value;
     },
 
-    _set: function (query, value) {
-        var propNameList, lastPropName, reference;
+    _set: function (query, value, type) {
+        var data, propNameList, lastPropName, reference;
 
+        data = this[type];
         propNameList = _parseQuery(query);
 
-        if (!_exists(propNameList, this._data)) {
+        if (!_exists(propNameList, data)) {
             logger.error('クエリに対応するデータ構造が存在しません。');
         }
 
         if (!propNameList.length) {
-            this._data = _extend(this._data, value);
+            this[type] = _extend(data, value);
 
         } else {
             lastPropName = propNameList.pop();
-            reference = _search(propNameList, this._data);
+            reference = _search(propNameList, data);
             if (_isObject(value)) {
                 reference[lastPropName] = {};
                 _extend(reference[lastPropName], value);
@@ -154,6 +198,32 @@ Model.prototype = _.create(Observable.prototype, {
         delete reference[lastPropName];
 
         return cache;
+    },
+
+    _setMethod: function (query, method, context) {
+        var methodNameList, lastMethodName, reference;
+        methodNameList = _parseQuery(query);
+
+        if (!_exists(methodNameList, this.methods)) {
+            logger.error('クエリに対応するデータ構造が存在しません。');
+        }
+
+        if (!methodNameList.length) {
+            this.methods = _extendMethod(this.methods, method, context);
+
+        } else {
+            lastMethodName = methodNameList.pop();
+            reference = _search(methodNameList, this.methods);
+            if (_isObject(method)) {
+                reference[lastMethodName] = {};
+                _extendMethod(reference[lastMethodName], method, context);
+
+            } else {
+                reference[lastMethodName] = method;
+            }
+        }
+
+        return method;
     },
 
     _bubbling: function (event, query, value, oldValue) {
@@ -203,24 +273,24 @@ Model.prototype = _.create(Observable.prototype, {
     },
 });
 
-function _extend(destination, source) {
-    destination = destination || (_.isArray(source) ? [] : {});
+function _extend(dest, src) {
+    dest = dest || (_.isArray(src) ? [] : {});
 
-    _.each(source, function (value, key) {
+    _.each(src, function (value, key) {
         if (_.isArray(value)) {
-            destination[key] = [];
-            _extend(destination[key], value);
+            dest[key] = [];
+            _extend(dest[key], value);
 
         } else if (_isObject(value)) {
-            destination[key] = {};
-            _extend(destination[key], value);
+            dest[key] = {};
+            _extend(dest[key], value);
 
         } else {
-            destination[key] = value;
+            dest[key] = value;
         }
     });
 
-    return destination;
+    return dest;
 }
 
 function _validate(value, required) {
@@ -243,7 +313,7 @@ function _validate(value, required) {
 
         break;
 
-        case 'function':
+        case 'function-only':
         if (_.isFunction(value)) {
             result = true;
 
@@ -273,38 +343,26 @@ function _validate(value, required) {
     return result;
 }
 
-function _addProp(dest, object) {
-    _.each(object, function (value, key) {
-        if (_.isArray(value)) {
-            dest[key] = [];
-            _addProp(dest[key], value);
+function _extendMethod(dest, object, context) {
+    dest = dest || (_.isArray(object) ? [] : {});
 
-        } else if (_isObject(value)) {
-            dest[key] = {};
-            _addProp(dest[key], value);
-
-        } else {
-            dest[key] = value;
-        }
-    });
-}
-
-function _addMethod(dest, object, context) {
     _.each(object, function (value, key) {
         var method;
         if (_.isArray(value)) {
             dest[key] = [];
-            _addMethod(dest[key], value, context);
+            _extendMethod(dest[key], value, context);
 
         } else if (_isObject(value)) {
             dest[key] = {};
-            _addMethod(dest[key], value, context);
+            _extendMethod(dest[key], value, context);
 
         } else {
             method = _.bind(value, context);
             dest[key] = method;
         }
     });
+
+    return dest;
 }
 
 function _parseQuery(query) {
@@ -314,11 +372,11 @@ function _parseQuery(query) {
 
 function _exists(list, data) {
     var result = _.every(list, function (propName) {
-        if (_.isArray(data) || (_.isObject(data) && !_.isFunction(data))) {
+        if (_.isArray(data) || _isObject(data)) {
             if (data.hasOwnProperty(propName)) {
                 data = data[propName];
-                return true;
             }
+            return true;
         }
     });
 

@@ -39,12 +39,29 @@ var mixin = {
         },
 
         addProp: function (object) {
-            this.model.addProp(object);
+            return this.model.addProp(object);
         },
 
         addMethod: function (object, context) {
             context = !_.isUndefined(context) ? context : this;
-            this.model.addMethod(object, context);
+            return this.model.addMethod(object, context);
+        },
+
+        getProp: function (query) {
+            return this.model.getProp(query);
+        },
+
+        setProp: function (query, object) {
+            return this.model.setProp(query, object);
+        },
+
+        getMethod: function (query) {
+            return this.model.getMethod(query);
+        },
+
+        setMethod: function (query, object, context) {
+            context = !_.isUndefined(context) ? context : this;
+            return this.model.setMethod(query, object, context);
         },
 
         watch: function (query, listener) {
@@ -73,20 +90,20 @@ var mixin = {
             return $unset(query, this);
         },
 
-        $getProp: function (propName) {
-            return $getProp(propName, this);
+        $getProp: function (query) {
+            return $getProp(query, this);
         },
 
-        $getMethod: function (methodName) {
-            return $getMethod(methodName, this);
+        $getMethod: function (query) {
+            return $getMethod(query, this);
         },
 
-        $setProp: function (propName, prop) {
-            return $setProp(propName, prop, this);
+        $setProp: function (query, prop) {
+            return $setProp(query, prop, this);
         },
 
-        $setMethod: function (methodName, method) {
-            return $setMethod(methodName, method, this);
+        $setMethod: function (query, method, context) {
+            return $setMethod(query, method, context, this);
         },
     },
 
@@ -128,6 +145,22 @@ var mixin = {
         },
 
         addMethod: function () {
+            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
+        },
+
+        getProp: function () {
+            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
+        },
+
+        setProp: function () {
+            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
+        },
+
+        getMethod: function () {
+            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
+        },
+
+        setMethod: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
@@ -291,63 +324,63 @@ function $unset(query, elem) {
     return result;
 }
 
-function $getProp(propName, elem) {
+function $getProp(query, elem) {
     var prop, next;
-    prop = elem.props[propName];
+    prop = elem.getProp(query);
     if (_.isUndefined(prop)) {
         next = elem._type === 'region' ? elem.parent : elem.container;
         if (!_.isNull(next)) {
-            prop = $getProp(propName, next);
+            prop = $getProp(query, next);
         }
     }
     return prop;
 }
 
-function $setProp(propName, value, elem) {
+function $setProp(query, value, elem) {
     var prop, next;
     if (_.isFunction(value)) {
         logger.error('Functionはプロパティに登録できません。');
     }
 
-    prop = elem.props[propName];
+    prop = elem.getProp(query);
     if (!_.isUndefined(prop)) {
-        elem.props[propName] = value;
+        elem.setProp(query, value);
 
     } else {
         next = elem._type === 'region' ? elem.parent : elem.container;
         if (!_.isNull(next)) {
-            $setProp(propName, value, next);
+            $setProp(query, value, next);
         }
     }
     return value;
 }
 
-function $getMethod(methodName, elem) {
+function $getMethod(query, elem) {
     var method, next;
-    method = elem.methods[methodName];
+    method = elem.getMethod(query);
     if (_.isUndefined(method)) {
         next = elem._type === 'region' ? elem.parent : elem.container;
         if (!_.isNull(next)) {
-            method = $getMethod(methodName, next);
+            method = $getMethod(query, next);
         }
     }
     return method;
 }
 
-function $setMethod(methodName, value, elem) {
+function $setMethod(query, value, context, elem) {
     var method, next;
     if (!_.isFunction(value)) {
         logger.error('Function以外はメソッドに登録できません。');
     }
 
-    method = elem.methods[methodName];
+    method = elem.getMethod(query);
     if (!_.isUndefined(method)) {
-        elem.methods[methodName] = value;
+        elem.setMethod(query, value, context);
 
     } else {
         next = elem._type === 'region' ? elem.parent : elem.container;
         if (!_.isNull(next)) {
-            $setMethod(methodName, value, next);
+            $setMethod(query, value, context, next);
         }
     }
     return value;

@@ -93,10 +93,8 @@ FSM.logger.disable();
 #### クラス共通のメソッド
  * getId()
  * getName()
- * setName(String $name)
+ * setName( String $name )
  * isActive()
- * addProp(Object $object) // {prop_name1: prop1, prop_name2: prop2...}
- * addMethod( Object $object [, Object $context] ) // {method_name1: method1, method_name2: method2...}
 
  #### クラス共通のプロパティ
   * parent: [State/Machineインスタンス]
@@ -191,10 +189,10 @@ newMachine.addState(newState);
  * region: Region [null]
 
 ###### Machine/Stateクラス共通のメソッド
- * getRegion(Integer $egion_index)
+ * getRegion( Integer $region_index )
  * getRoot()
- * getRegionByName(String $region_name)
- * getRegionById(String $region_id)
+ * getRegionByName( String $region_name )
+ * getRegionById( String $region_id )
  * addState( State $instance1 [, State $...] )
  * addTransition( Transition $instance1 [, Transition $...] )
  * appendRegion( Region $instance )
@@ -275,7 +273,7 @@ var state1 = new FSM.State(false, {
 
 ###### Transitionクラス固有のプロパティ・メソッド
  * test() //トリガが発火可能か確認するメソッド
- * trigger(Any $param) //パラメータを指定するとguard()とeffect()実行時に渡される
+ * trigger( Any $param ) //パラメータを指定するとguard()とeffect()実行時に渡される
 
 #### Regionクラス
 **Region**クラスはステートマシン図の「領域（Region）」と同等の意味を持ちます。Regionクラスは親要素にひとつのState/Machineインスタンスを指定でき、子要素に複数のStateとTransitionを持ちます。Regionクラスは直交状態を使用しない限り、ユーザーが明示的に使用することはないですが、Machineインスタンスとコンポジット状態（サブ状態を持つ状態）は内部的にRegionインスタンスが追加されます。ですから、Machine/Stateクラスが持つ<i>addState()</i>・<i>addTransition()</i>メソッドは本来Regionクラスの固有メソッドで、アクセスを簡易化するため内部でRegionインスタンスにアクセスしています。
@@ -297,12 +295,12 @@ newMachine.appendRegion(newRegion);
 
 ##### Regionクラスのプロパティ/メソッド
 ###### Regionクラス固有のメソッド
- * hasHistory(Bool $is_deep [false])
+ * hasHistory( Bool $is_deep[false] )
  * getIndex()
- * getStateByName(String $state_name)
- * getTransitionByName(String $transition_name)
- * getStateById(String $state_id)
- * getTransitionById(String $transition_id)
+ * getStateByName( String $state_name )
+ * getTransitionByName( String $transition_name )
+ * getStateById( String $state_id )
+ * getTransitionById( String $transition_id )
  * addState()
  * removeState()
  * addTransition()
@@ -346,7 +344,7 @@ someState.addTransition(choiceToAny);
 マシンをSubMachineクラスでラップすることで、別のステートマシン図のサブマシン状態として再利用できます。そのためにマシン側と、SubMachineインスタンス側双方でリンクさせる入場・退場ポイントを指定する必要があります。
 
 ###### SubMachineクラス固有のメソッド
- * addLink(Machine $instance)
+ * addLink( Machine $instance )
  * removeLink()
 
 ```javascript
@@ -388,24 +386,30 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
 #### Machine/State/Transition/Regionクラスのデータ操作
  * has ( String $query )
  * get( String $query )
- * set( String $query , Mixed $value )
+ * set( String $query, Mixed $value ) または set( Object $object ) //require JSON data type
  * unset( String $query )
  * extend( Object $object ) //{$key1: value1, $key2: $value2...}
  * save()
  * restore()
  * clear()
- * watch(String $query, Function $listener)
- * unwatch(String $query, Function $listener)
- * addProp( Object $object )
- * addMethod(Object $object )
+ * watch( String $query, Function $listener )
+ * unwatch( String $query, Function $listener )
+ * addProp( Object $object ) // {prop_name1: prop1, prop_name2: prop2...}
+ * addMethod( Object $object ) // {method_name1: method1, method_name2: method2...}
+ * getProp( String $query )
+ * getMethod( String $query )
+ * setProp( String $query, Mixed $value )
+ * setMethod( String $query, Function $method [, Elem $elem] )
 
 #### State/Transitionクラスの上位の状態に対するデータ操作
  * $has( String $query )
  * $get( String $query )
- * $set( String $query, Mixed $value ) または $set( Object $object )
+ * $set( String $query, Mixed $value ) または $set( Object $object ) //require JSON data type
  * $unset( String $query )
- * $getProp(): Object [empty object]
- * $getMethod(): Object [empty object]
+ * $getProp( String $query )
+ * $getMethod( String $query )
+ * $setProp( String $query, Mixed $value )
+ * $setMethod( String $query, Function $method [, Elem $elem] )
 
 #### 使用例
 ```javascript
