@@ -388,7 +388,6 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * get( String $query )
  * set( String $query, Mixed $value ) または set( Object $object ) //require JSON data type
  * unset( String $query )
- * extend( Object $object ) //{$key1: value1, $key2: $value2...}
  * save()
  * restore()
  * clear()
@@ -399,7 +398,7 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * getProp( String $query )
  * getMethod( String $query )
  * setProp( String $query, Mixed $value )
- * setMethod( String $query, Function $method [, Elem $elem] )
+ * setMethod( String $query, Function $method [, Elem $context] )
 
 #### State/Transitionクラスの上位の状態に対するデータ操作
  * $has( String $query )
@@ -409,7 +408,7 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * $getProp( String $query )
  * $getMethod( String $query )
  * $setProp( String $query, Mixed $value )
- * $setMethod( String $query, Function $method [, Elem $elem] )
+ * $setMethod( String $query, Function $method [, Elem $context] )
 
 #### 使用例
 ```javascript
