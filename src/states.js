@@ -39,6 +39,15 @@ var State = function (name, options) {
     this._useRAF = options.useRAF;
 
     this._timerId = 0;
+    this._ticks = 0;
+    this._elapsedTime = 0;
+    this._lastTime = 0;
+
+    this._setTimer = (this._useRAF && !_.isUndefined(util.global.requestAnimationFrame)) ?
+        this._requestAnimFrame : this._setTimeout;
+
+    this._clearTimer = (this._useRAF && !_.isUndefined(util.global.requestAnimationFrame)) ?
+        this._cancelAnimFrame : this._clearTimeout;
 };
 
 State.options = {
@@ -119,25 +128,30 @@ State.prototype = _.create(BaseState.prototype, {
         }
     },
 
-    _setAnim: function (callback) {
-        var step = _.bind(function (currentTime) {
-            var delta;
-            this._timerId = requestAnimationFrame(step);
-            delta = this._lastTime !== 0 ? currentTime - this._lastTime : 0;
-            this._elapsedTime += delta;
-            this._lastTime = currentTime;
-            this._ticks += 1;
-            callback(delta);
-        }, this);
+    _requestAnimFrame: function (callback) {
+        var loop;
+        callback = _.bind(callback, this);
 
         this._ticks = 0;
         this._elapsedTime = 0;
         this._lastTime = 0;
 
-        this._timerId = requestAnimationFrame(step);
+        loop = _.bind(function (currentTime) {
+            var delta;
+            this._timerId = requestAnimationFrame(loop);
+
+            delta = this._lastTime !== 0 ? currentTime - this._lastTime : 0;
+            this._elapsedTime += delta;
+            this._lastTime = currentTime;
+            this._ticks += 1;
+
+            callback(delta);
+        }, this);
+
+        this._timerId = requestAnimationFrame(loop);
     },
 
-    _clearAnim: function () {
+    _cancelAnimFrame: function () {
         clearAnimationFrame(this._timerId);
     },
 
@@ -147,7 +161,7 @@ State.prototype = _.create(BaseState.prototype, {
         this._ticks = 0;
     },
 
-    _setTimer: function (callback) {
+    _setTimeout: function (callback) {
         var loop;
         callback = _.bind(callback, this);
 
@@ -164,7 +178,7 @@ State.prototype = _.create(BaseState.prototype, {
         loop();
     },
 
-    _clearTimer: function () {
+    _clearTimeout: function () {
         clearTimeout(this._timerId);
     },
 
@@ -194,11 +208,9 @@ State.prototype = _.create(BaseState.prototype, {
         this.notify('root', 'prev-activity', this);
 
         this.notify('root', 'async-activity', _.bind(function () {
-            var transit, setTimer;
-            transit = util.findRelatedTransition(this);
+            var transit = util.findRelatedTransition(this);
             if (this._loop) {
-                setTimer = _.bind((this._useRAF ? this._setAnim : this._setTimer), this);
-                setTimer(function (deltaTime) {
+                this._setTimer(function (deltaTime) {
                     this.doActivity(deltaTime, transit);
 
                     if (this.autoTransition) {
@@ -218,10 +230,8 @@ State.prototype = _.create(BaseState.prototype, {
     },
 
     _deactivate: function () {
-        var transit, clearTimer;
-        transit = util.findRelatedTransition(this);
-        clearTimer = _.bind((this._useRAF ? this._clearAnim : this._clearTimer), this);
-        clearTimer();
+        var transit = util.findRelatedTransition(this);
+        this._clearTimer();
 
         if (!_.isNull(this.container)) {
             this.notify('container', 'set-previous-state', this);

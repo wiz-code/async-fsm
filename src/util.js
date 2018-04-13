@@ -2,7 +2,13 @@
 
 var _ = require('underscore');
 
+var global = (function () {
+    return Function('return this')();
+}());
+
 var util = {
+    global: global,
+
     isFalsy: _.negate(Boolean),
 
     eachElem: function (state, callback) {
