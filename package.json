@@ -1,6 +1,6 @@
 {
   "name": "@wiz-code/async-fsm",
-  "version": "0.5.0",
+  "version": "0.5.01",
   "description": "Finite StateMachine JavaScript Library",
   "keywords": [
     "FSM",

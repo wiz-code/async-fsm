@@ -120,7 +120,7 @@ State.prototype = _.create(BaseState.prototype, {
     },
 
     _setAnim: function (callback) {
-        var step = function (currentTime) {
+        var step = _.bind(function (currentTime) {
             var delta;
             this._timerId = requestAnimationFrame(step);
             delta = this._lastTime !== 0 ? currentTime - this._lastTime : 0;
@@ -128,7 +128,7 @@ State.prototype = _.create(BaseState.prototype, {
             this._lastTime = currentTime;
             this._ticks += 1;
             callback(delta);
-        };
+        }, this);
 
         this._ticks = 0;
         this._elapsedTime = 0;
