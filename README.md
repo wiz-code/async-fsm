@@ -110,8 +110,8 @@ Machineインスタンスが生成されると、内部的な処理として自�
 ##### Machineクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
  * data: JSONデータ型 [Null]
- * props: Object [empty object]
- * methods: Object [empty object]
+ * props: Object [Null]
+ * methods: Object [Null]
 
 ##### Machineクラスのプロパティ/メソッド
 ###### Machineクラス固有のメソッド
@@ -173,8 +173,8 @@ newMachine.addState(newState);
 ##### Stateクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
  * data: JSONデータ型 [Null]
- * props: Object [empty object]
- * methods: Object [empty object]
+ * props: Object [Null]
+ * methods: Object [Null]
  * entryAction: Function [empty function]
  * doActivity: Function [empty function]
  * exitAction: Function [empty function]
@@ -260,8 +260,8 @@ var state1 = new FSM.State(false, {
 ##### Transitionクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
  * data: JSONデータ型 [Null]
- * props: Object [empty object]
- * methods: Object [empty object]
+ * props: Object [Null]
+ * methods: Object [Null]
  * guard: Function [null]
  * effect: Function [null]
  * internal: Bool [false]
@@ -290,8 +290,8 @@ newMachine.appendRegion(newRegion);
 ##### Regionクラスのオプション
 プロパティ名: データ型 ［デフォルト値］
  * data: JSONデータ型 [Null]
- * props: Object [empty object]
- * methods: Object [empty object]
+ * props: Object [Null]
+ * methods: Object [Null]
 
 ##### Regionクラスのプロパティ/メソッド
 ###### Regionクラス固有のメソッド
@@ -398,7 +398,7 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * getProp( String $query )
  * getMethod( String $query )
  * setProp( String $query, Mixed $value )
- * setMethod( String $query, Function $method [, Elem $context] )
+ * setMethod( String $query, Function $method [, Elem $context ] )
 
 #### State/Transitionクラスの上位の状態に対するデータ操作
  * $has( String $query )
@@ -408,7 +408,7 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * $getProp( String $query )
  * $getMethod( String $query )
  * $setProp( String $query, Mixed $value )
- * $setMethod( String $query, Function $method [, Elem $context] )
+ * $setMethod( String $query, Function $method [, Elem $context ] )
 
 #### 使用例
 ```javascript
