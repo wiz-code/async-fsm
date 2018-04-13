@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.4.93
+ * version 0.5.0
  *
  * Copyright (c) 2018 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -38,6 +38,27 @@ FSM = {
 
     EntryPointPseudoState: EntryPointPseudoState,
     ExitPointPseudoState: ExitPointPseudoState,
+
+    globalize: globalize,
 };
+
+function globalize() {
+    var g = (Function('return this')());
+
+    g.Machine = Machine;
+    g.State = State;
+    g.Transition = Transition;
+    g.Region = Region;
+
+    g.InitialPseudoState = InitialPseudoState;
+    g.FinalState = FinalState;
+    g.SubMachine = SubMachine;
+    g.HistoryPseudoState = HistoryPseudoState;
+    g.TerminatePseudoState = TerminatePseudoState;
+    g.ChoicePseudoState = ChoicePseudoState;
+
+    g.EntryPointPseudoState = EntryPointPseudoState;
+    g.ExitPointPseudoState = ExitPointPseudoState;
+}
 
 module.exports = FSM;

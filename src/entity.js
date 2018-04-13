@@ -41,12 +41,12 @@ Entity.prototype = _.create(Subject.prototype, _.extend({
         return this._name;
     },
 
-    setName: function (name) {
+    setName: function (name, automatical) {
         this._name = name;
-        if (!this._originalName) {
+        if (!this._originalName && util.isFalsy(automatical)) {
             this._originalName = name;
         }
-        
+
         return name;
     },
 

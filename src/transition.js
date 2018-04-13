@@ -72,7 +72,7 @@ var Transition = function (name, source, target, options) {
         }
     }
 
-    this.locked = options.locked;
+    this.unlocked = options.unlocked;
 
     this._watcher = {
         listener: null,
@@ -90,7 +90,7 @@ Transition.options = {
     effect: null,
     internal: false,
 
-    locked: true,
+    unlocked: false,
 };
 
 Transition.prototype = _.create(Elem.prototype, {
@@ -196,14 +196,6 @@ Transition.prototype = _.create(Elem.prototype, {
                 this._refresh.apply(this, params);
                 break;
         }
-    },
-
-    getRoot: function () {
-        var result = this;
-        while (!_.isNull(result._getParentState())) {
-            result = result._getParentState();
-        }
-        return result;
     },
 
     _getParentState: function () {

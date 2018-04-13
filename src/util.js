@@ -66,7 +66,7 @@ var util = {
                 return transit.source === from;
 
             } else {
-                return transit.source === from && !transit.locked;
+                return transit.source === from && transit.unlocked;
             }
         });
     },

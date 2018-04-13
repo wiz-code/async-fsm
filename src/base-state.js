@@ -36,23 +36,21 @@ ProtoState.prototype = _.create(Elem.prototype, {
         return result;
     },
 
-    getRoot: function () {
-        var result = this;
-        while (!_.isNull(result._getParentState())) {
-            result = result._getParentState();
-        }
-        return result;
-    },
-
     getRegionByName: function (regionName) {
         return _.find(this.children, function (region) {
-            return region._name === regionName;
+            return region.getName() === regionName;
         });
     },
 
     getRegionById: function (regionId) {
         return _.find(this.children, function (region) {
-            return region._id === regionId;
+            return region.getId() === regionId;
+        });
+    },
+
+    findActiveRegion: function () {
+        return _.find(this.children, function (region) {
+            return region.isActive();
         });
     },
 
@@ -197,7 +195,7 @@ ProtoState.prototype = _.create(Elem.prototype, {
         region.addObserver('parent', this);
 
         if (!region._originalName) {
-            region._name = 'region-index-' + region.getIndex() + '-of-' + this._name;
+            region.setName('region-index-' + region.getIndex() + '-of-' + this._name, true);
             region._setDefaultStateName();
         }
 
@@ -237,7 +235,7 @@ ProtoState.prototype = _.create(Elem.prototype, {
         region.removeObserver('parent', this);
 
         if (!region._originalName) {
-            region._name = this._id;
+            region.setName(this._id, true);
             region._setDefaultStateName();
         }
 

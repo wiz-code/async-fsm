@@ -36,9 +36,9 @@ var State = function (name, options) {
     this._loop = options.loop;
     this._fps = options.fps;
     this._interval = 1000 / this._fps;
+    this._useRAF = options.useRAF;
 
     this._timerId = 0;
-    this._lastCallTime = 0;
 };
 
 State.options = {
@@ -49,6 +49,7 @@ State.options = {
     autoTransition: false,
     loop: false,
     fps: 60,
+    useRAF: false,
 };
 
 State.prototype = _.create(BaseState.prototype, {
@@ -118,11 +119,39 @@ State.prototype = _.create(BaseState.prototype, {
         }
     },
 
+    _setAnim: function (callback) {
+        var step = function (currentTime) {
+            var delta;
+            this._timerId = requestAnimationFrame(step);
+            delta = this._lastTime !== 0 ? currentTime - this._lastTime : 0;
+            this._elapsedTime += delta;
+            this._lastTime = currentTime;
+            this._ticks += 1;
+            callback(delta);
+        };
+
+        this._ticks = 0;
+        this._elapsedTime = 0;
+        this._lastTime = 0;
+
+        this._timerId = requestAnimationFrame(step);
+    },
+
+    _clearAnim: function () {
+        clearAnimationFrame(this._timerId);
+    },
+
+    resetTimer: function () {
+        this._lastTime = 0;
+        this._elapsedTime = 0;
+        this._ticks = 0;
+    },
+
     _setTimer: function (callback) {
         var loop;
         callback = _.bind(callback, this);
 
-        this._startTime = 0;
+        this._lastTime = 0;
         this._elapsedTime = 0;
         this._ticks = 0;
         this._timerId = 0;
@@ -143,15 +172,9 @@ State.prototype = _.create(BaseState.prototype, {
         var currentTime, deltaTime, processingTime, timeToCall;
 
         currentTime = _.now();
-        if (this._startTime === 0) {
-            this._startTime = currentTime;
-            deltaTime = 0;
+        deltaTime = this._lastTime === 0 ? 0 : currentTime - this._lastTime;
 
-        } else {
-            deltaTime = currentTime - this._lastTime;
-            this._elapsedTime = currentTime - this._startTime;
-        }
-
+        this._elapsedTime += deltaTime;
         this._lastTime = currentTime;
         this._ticks += 1;
 
@@ -171,9 +194,11 @@ State.prototype = _.create(BaseState.prototype, {
         this.notify('root', 'prev-activity', this);
 
         this.notify('root', 'async-activity', _.bind(function () {
-            var transit = util.findRelatedTransition(this);
+            var transit, setTimer;
+            transit = util.findRelatedTransition(this);
             if (this._loop) {
-                this._setTimer(function (deltaTime) {
+                setTimer = _.bind((this._useRAF ? this._setAnim : this._setTimer), this);
+                setTimer(function (deltaTime) {
                     this.doActivity(deltaTime, transit);
 
                     if (this.autoTransition) {
@@ -193,8 +218,10 @@ State.prototype = _.create(BaseState.prototype, {
     },
 
     _deactivate: function () {
-        var transit = util.findRelatedTransition(this);
-        this._clearTimer();
+        var transit, clearTimer;
+        transit = util.findRelatedTransition(this);
+        clearTimer = _.bind((this._useRAF ? this._clearAnim : this._clearTimer), this);
+        clearTimer();
 
         if (!_.isNull(this.container)) {
             this.notify('container', 'set-previous-state', this);

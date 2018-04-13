@@ -13,6 +13,7 @@ var Elem = function (name) {
 
     this._type = 'element';
 
+    this.root = null;
     this.parent = null;
     this.children = null;
     this._attached = false;

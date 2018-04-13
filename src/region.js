@@ -46,13 +46,13 @@ Region.prototype = _.create(Elem.prototype, {
 
     _cname: 'Region',
 
-    setName: function (name) {
+    setName: function (name, automatical) {
         this._name = name;
-        if (!this._originalName) {
+        if (!this._originalName && util.isFalsy(automatical)) {
             this._originalName = name;
-            this._setDefaultStateName();
         }
 
+        this._setDefaultStateName();
         return name;
     },
 
@@ -73,25 +73,31 @@ Region.prototype = _.create(Elem.prototype, {
 
     getStateByName: function (stateName) {
         return _.find(this.children.states, function (state) {
-            return state._name === stateName;
+            return state.getName() === stateName;
         });
     },
 
     getTransitionByName: function (transitionName) {
         return _.find(this.children.transitions, function (transit) {
-            return transit._name === transitionName;
+            return transit.getName() === transitionName;
         });
     },
 
     getStateById: function (stateId) {
         return _.find(this.children.states, function (state) {
-            return state._id === stateId;
+            return state.getId() === stateId;
         });
     },
 
     getTransitionById: function (transitionId) {
         return _.find(this.children.transitions, function (transit) {
-            return transit._id === transitionId;
+            return transit.getId() === transitionId;
+        });
+    },
+
+    findActiveState: function () {
+        return _.find(this.children.states, function (state) {
+            return state.isActive();
         });
     },
 
@@ -239,7 +245,7 @@ Region.prototype = _.create(Elem.prototype, {
             transit.addObserver('target', transit.target);
 
             if (!transit._originalName) {
-                transit._name = 'transit-from-' + transit.source._name + '-to-' + transit.target._name;
+                transit.setName('transit-from-' + transit.source._name + '-to-' + transit.target._name, true);
             }
 
             this.children.transitions.push(transit);
@@ -279,7 +285,7 @@ Region.prototype = _.create(Elem.prototype, {
                 transit.removeObserver('target', transit.target);
 
                 if (!transit._originalName) {
-                    transit._name = transit._id;
+                    transit.setName(transit._id, true);
                 }
 
                 transit.container = null;
@@ -340,6 +346,10 @@ Region.prototype = _.create(Elem.prototype, {
         var InitialPseudoState = require('./pseudo-states').InitialPseudoState;
         var FinalState = require('./states').FinalState;
         var initialPseudo, final;
+        if (!_.isNull(this._initialPseudo) || !_.isNull(this._final)) {
+            return;
+        }
+
         initialPseudo = new InitialPseudoState(false);
         final = new FinalState(false);
 
@@ -348,8 +358,8 @@ Region.prototype = _.create(Elem.prototype, {
     },
 
     _setDefaultStateName: function () {
-        this._initialPseudo._name = 'initial-pseudo-state-in-' + this._name;
-        this._final._name = 'final-state-in-' + this._name;
+        this._initialPseudo.setName('initial-pseudo-state-in-' + this._name, true);
+        this._final.setName('final-state-in-' + this._name, true);
     },
 
     _refresh: function (depth) {

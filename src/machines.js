@@ -54,6 +54,7 @@ Machine.prototype = _.create(BaseState.prototype, {
 
         util.eachElem(this, _.bind(function (elem) {
             elem._attached = true;
+            elem.root = this;
 
             if (!(elem instanceof Machine)) {
                 elem.addObserver('root', this);
@@ -81,6 +82,7 @@ Machine.prototype = _.create(BaseState.prototype, {
 
         util.eachElem(this, _.bind(function (elem) {
             elem._attached = false;
+            elem.root = null;
 
             if (!(elem instanceof Machine)) {
                 elem.removeObserver('root', this);
@@ -275,7 +277,7 @@ Machine.prototype = _.create(BaseState.prototype, {
 var SubMachine = function (name) {
     BaseState.call(this, name);
 
-    this._link = null;
+    this._linkedMachine = null;
     this._deployed = false;
 
     this.appendRegion();
@@ -348,22 +350,22 @@ SubMachine.prototype = _.create(BaseState.prototype, {
         return this;
     },
 
-    addLink: function (machine) {
+    link: function (machine) {
         if (!(machine instanceof Machine)) {
             logger.error('Machineインスタンスを指定してください。');
         }
 
-        this._link = machine;
+        this._linkedMachine = machine;
         this.addObserver('inner-machine', machine);
 
         machine.addObserver('outer-machine', this);
     },
 
-    removeLink: function () {
-        this.removeObserver('inner-machine', this._link);
+    unlink: function () {
+        this.removeObserver('inner-machine', this._linkedMachine);
 
-        this._link.removeObserver('outer-machine', this);
-        this._link = null;
+        this._linkedMachine.removeObserver('outer-machine', this);
+        this._linkedMachine = null;
     },
 
     update: function (event) {
