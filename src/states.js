@@ -152,7 +152,7 @@ State.prototype = _.create(BaseState.prototype, {
     },
 
     _cancelAnimFrame: function () {
-        clearAnimationFrame(this._timerId);
+        cancelAnimationFrame(this._timerId);
     },
 
     resetTimer: function () {
