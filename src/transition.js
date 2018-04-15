@@ -43,17 +43,17 @@ var Transition = function (name, source, target, options) {
 
     options = _.defaults(options || {}, _.clone(Transition.options));
 
-    if (_.isObject(options.data) && !_.isFunction(options.data)) {
+    if (!_.isUndefined(options.data)) {
         this.set(options.data);
     }
 
     this.save();
 
-    if (_.isObject(options.props) && !_.isFunction(options.props)) {
+    if (!_.isUndefined(options.props)) {
         this.addProp(options.props);
     }
 
-    if (_.isObject(options.methods) && !_.isFunction(options.methods)) {
+    if (!_.isUndefined(options.methods)) {
         this.addMethod(options.methods);
     }
 
@@ -73,11 +73,6 @@ var Transition = function (name, source, target, options) {
     }
 
     this.unlocked = options.unlocked;
-
-    this._watcher = {
-        listener: null,
-        cache: null,
-    };
 
     this._isExplicitEntry = false;
     this._exitViaExitPoint = false;
@@ -109,9 +104,8 @@ Transition.prototype = _.create(Elem.prototype, {
             ) {
                 result = true;
             }
-        } catch (e) {
-            return false;
-        }
+        } catch (e) {}
+        
         return result;
     },
 

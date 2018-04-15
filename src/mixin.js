@@ -22,10 +22,6 @@ var mixin = {
             return this.model.unset(query);
         },
 
-        extend: function (data) {
-            return this.model.extend(data);
-        },
-
         save: function () {
             this.model.save();
         },
@@ -121,10 +117,6 @@ var mixin = {
         },
 
         unset: function () {
-            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
-        },
-
-        extend: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 
@@ -245,57 +237,41 @@ var mixin = {
 };
 
 function $has(query, elem) {
-    var result, parent;
+    var result, next;
     result = elem.has(query);
     if (!result) {
-        if (elem._type === 'region') {
-            parent = elem.parent;
-            if (!_.isNull(parent)) {
-                result = $has(query, parent);
-            }
-        } else {
-            if (!_.isNull(elem.container)) {
-                result = $has(query, elem.container);
-            }
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            result = $has(query, parent);
         }
     }
+
     return result;
 }
 
 function $get(query, elem) {
-    var result, parent;
+    var result, next;
     result = elem.get(query);
     if (_.isUndefined(result)) {
-        if (elem._type === 'region') {
-            parent = elem.parent;
-            if (!_.isNull(parent)) {
-                result = $get(query, parent);
-            }
-        } else {
-            if (!_.isNull(elem.container)) {
-                result = $get(query, elem.container);
-            }
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            result = $get(query, next);
         }
     }
+    
     return result;
 }
 
 function $set(query, value, elem) {
-    var result, parent;
+    var result, next;
     result = elem.get(query);
     if (!_.isUndefined(result)) {
         result = elem.set(query, value);
 
     } else {
-        if (elem._type === 'region') {
-            parent = elem.parent;
-            if (!_.isNull(parent)) {
-                result = $set(query, value, parent);
-            }
-        } else {
-            if (!_.isNull(elem.container)) {
-                result = $set(query, value, elem.container);
-            }
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            result = $set(query, value, next);
         }
     }
 
@@ -303,21 +279,15 @@ function $set(query, value, elem) {
 }
 
 function $unset(query, elem) {
-    var result, parent;
+    var result, next;
     result = elem.get(query);
     if (!_.isUndefined(result)) {
         result = elem.unset(query);
 
     } else {
-        if (elem._type === 'region') {
-            parent = elem.parent;
-            if (!_.isNull(parent)) {
-                result = $unset(query, parent);
-            }
-        } else {
-            if (!_.isNull(elem.container)) {
-                result = $unset(query, elem.container);
-            }
+        next = elem._type === 'region' ? elem.parent : elem.container;
+        if (!_.isNull(next)) {
+            result = $unset(query, next);
         }
     }
 
@@ -333,6 +303,7 @@ function $getProp(query, elem) {
             prop = $getProp(query, next);
         }
     }
+
     return prop;
 }
 
@@ -352,6 +323,7 @@ function $setProp(query, value, elem) {
             $setProp(query, value, next);
         }
     }
+
     return value;
 }
 
@@ -364,6 +336,7 @@ function $getMethod(query, elem) {
             method = $getMethod(query, next);
         }
     }
+
     return method;
 }
 
@@ -383,6 +356,7 @@ function $setMethod(query, value, context, elem) {
             $setMethod(query, value, context, next);
         }
     }
+
     return value;
 }
 

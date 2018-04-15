@@ -120,13 +120,6 @@ ProtoState.prototype = _.create(Elem.prototype, {
         }
     },
 
-    _exit: function () {
-        if (this.isActive()) {
-            this.notify('children', 'exit');
-            this._deactivate();
-        }
-    },
-
     addState: function () {
         var states = _.toArray(arguments);
         if (_.isNull(this.region)) {
@@ -235,7 +228,7 @@ ProtoState.prototype = _.create(Elem.prototype, {
         region.removeObserver('parent', this);
 
         if (!region._originalName) {
-            region.setName(this._id, true);
+            region.setName(region.getId(), true);
             region._setDefaultStateName();
         }
 

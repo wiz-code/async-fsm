@@ -13,17 +13,17 @@ var State = function (name, options) {
 
     options = _.defaults(options || {}, _.clone(State.options));
 
-    if (_.isObject(options.data) && !_.isFunction(options.data)) {
+    if (!_.isUndefined(options.data)) {
         this.set(options.data);
     }
 
     this.save();
 
-    if (_.isObject(options.props) && !_.isFunction(options.props)) {
+    if (!_.isUndefined(options.props)) {
         this.addProp(options.props);
     }
 
-    if (_.isObject(options.methods) && !_.isFunction(options.methods)) {
+    if (!_.isUndefined(options.methods)) {
         this.addMethod(options.methods);
     }
 
@@ -67,21 +67,19 @@ State.prototype = _.create(BaseState.prototype, {
     _cname: 'State',
 
     getTicks: function () {
-        if (this._loop) {
-            return this._ticks;
-
-        } else {
+        if (!this._loop) {
             logger.error('Stateインスタンスのloopオプションが指定されてません。');
         }
+
+        return this._ticks;
     },
 
     getElapsedTime: function () {
-        if (this._loop) {
-            return this._elapsedTime;
-
-        } else {
+        if (!this._loop) {
             logger.error('Stateインスタンスのloopオプションが指定されてません。');
         }
+
+        return this._elapsedTime;
     },
 
     completion: function () {
@@ -132,9 +130,7 @@ State.prototype = _.create(BaseState.prototype, {
         var loop;
         callback = _.bind(callback, this);
 
-        this._ticks = 0;
-        this._elapsedTime = 0;
-        this._lastTime = 0;
+        this.resetTimer();
 
         loop = _.bind(function (currentTime) {
             var delta;
@@ -165,17 +161,14 @@ State.prototype = _.create(BaseState.prototype, {
         var loop;
         callback = _.bind(callback, this);
 
-        this._lastTime = 0;
-        this._elapsedTime = 0;
-        this._ticks = 0;
-        this._timerId = 0;
+        this.resetTimer();
 
         loop = _.bind(function () {
             var timeToCall = this._tick(callback);
             this._timerId = setTimeout(loop, timeToCall);
         }, this);
 
-        loop();
+        this._timerId = setTimeout(loop, 0);
     },
 
     _clearTimeout: function () {
@@ -208,7 +201,6 @@ State.prototype = _.create(BaseState.prototype, {
         this.notify('root', 'prev-activity', this);
 
         this.notify('root', 'async-activity', _.bind(function () {
-            var transit = util.findRelatedTransition(this);
             if (this._loop) {
                 this._setTimer(function (deltaTime) {
                     this.doActivity(deltaTime, transit);
@@ -242,13 +234,6 @@ State.prototype = _.create(BaseState.prototype, {
         this._status = 'inactive';
         logger.info(this._cname + 'インスタンス"' + this._name + '"が非アクティブ化されました。');
 
-    },
-
-    _entry: function (message) {
-        if (!this.isActive()) {
-            this._activate();
-            this.notify('children', 'entry', message);
-        }
     },
 });
 

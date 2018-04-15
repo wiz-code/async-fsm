@@ -13,17 +13,17 @@ var Region = function (name, options) {
 
     options = options || {};
 
-    if (_.isObject(options.data) && !_.isFunction(options.data)) {
+    if (!_.isUndefined(options.data)) {
         this.set(options.data);
     }
 
     this.save();
 
-    if (_.isObject(options.props) && !_.isFunction(options.props)) {
+    if (!_.isUndefined(options.props)) {
         this.addProp(options.props);
     }
 
-    if (_.isObject(options.methods) && !_.isFunction(options.methods)) {
+    if (!_.isUndefined(options.methods)) {
         this.addMethod(options.methods);
     }
 
@@ -102,8 +102,9 @@ Region.prototype = _.create(Elem.prototype, {
     },
 
     addState: function () {
-        var BaseState, InitialPseudoState, HistoryPseudoState, FinalState, states, i, l, state, currentDepth;
+        var BaseState, Machine, InitialPseudoState, HistoryPseudoState, FinalState, states, i, l, state, currentDepth;
         BaseState = require('./base-state');
+        Machine = require('./machines').Machine;
         HistoryPseudoState = require('./pseudo-states').HistoryPseudoState;
         InitialPseudoState = require('./pseudo-states').InitialPseudoState;
         FinalState = require('./states').FinalState;
@@ -117,7 +118,7 @@ Region.prototype = _.create(Elem.prototype, {
         for (i = 0, l = states.length; i < l; i += 1) {
             state = states[i];
 
-            if (!(state instanceof BaseState)) {
+            if (state instanceof Machine || !(state instanceof BaseState)) {
                 logger.error('Stateインスタンスを指定してください。');
             }
 

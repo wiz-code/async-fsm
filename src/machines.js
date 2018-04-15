@@ -12,17 +12,17 @@ var Machine = function (name, options) {
 
     options = options || {};
 
-    if (_.isObject(options.data) && !_.isFunction(options.data)) {
+    if (!_.isUndefined(options.data)) {
         this.set(options.data);
     }
 
     this.save();
 
-    if (_.isObject(options.props) && !_.isFunction(options.props)) {
+    if (!_.isUndefined(options.props)) {
         this.addProp(options.props);
     }
 
-    if (_.isObject(options.methods) && !_.isFunction(options.methods)) {
+    if (!_.isUndefined(options.methods)) {
         this.addMethod(options.methods);
     }
 
@@ -222,7 +222,7 @@ Machine.prototype = _.create(BaseState.prototype, {
         this.completion();
 
         this._addChain(_.bind(function () {
-            this.notify('outer-machine', 'link-back', state._id);
+            this.notify('outer-machine', 'link-back', state.getId());
             return Promise.resolve();
         }, this));
     },
@@ -290,32 +290,26 @@ SubMachine.prototype = _.create(BaseState.prototype, {
     _cname: 'SubMachine',
 
     deploy: function () {
-        var PseudoState, ConnectionPointPseudoState, InitialPseudoState, FinalState;
-        PseudoState = require('./pseudo-states').PseudoState;
+        var Region, ConnectionPointPseudoState, InitialPseudoState, FinalState;
+        Region = require('./region');
         ConnectionPointPseudoState = require('./pseudo-states').ConnectionPointPseudoState;
         InitialPseudoState = require('./pseudo-states').InitialPseudoState;
         FinalState = require('./states').FinalState;
 
         this._deployed = true;
 
-        util.eachElem(this, _.bind(function (elem) {
-            if (elem instanceof BaseState) {
-                if (elem instanceof PseudoState) {
-                    if (elem instanceof ConnectionPointPseudoState) {
-                        elem.addObserver('sub-root', this);
+        util.eachElem(this, _.bind(function (elem) {console.log(elem._name)
+            if (elem instanceof ConnectionPointPseudoState) {
+                elem.addObserver('sub-root', this);
 
-                        if (elem.parent === this) {
-                            elem._isMediator = true;
+                if (elem.parent === this) {
+                    elem._isMediator = true;
 
-                        } else {
-                            logger.error('ConnectionPointPseudoStateインスタンスはサブマシン直下のサブ状態でなければなりません。');
-                        }
-                    } else if (!(elem instanceof InitialPseudoState)) {
-                        logger.error('SubMachineインスタンスはConnectionPointPseudoStateクラス以外の状態を追加できません。');
-                    }
-                } else if (!(elem instanceof SubMachine) && !(elem instanceof FinalState)) {
-                    logger.error('SubMachineインスタンスはConnectionPointPseudoStateクラス以外の状態を保持できません。');
+                } else {
+                    logger.error('ConnectionPointPseudoStateインスタンスはサブマシン直下のサブ状態でなければなりません。');
                 }
+            } else if (!(elem instanceof Region || elem instanceof SubMachine || elem instanceof InitialPseudoState || elem instanceof FinalState)) {
+                logger.error('SubMachineインスタンスはConnectionPointPseudoStateクラス以外の状態を追加できません。');
             }
         }, this));
 
@@ -323,8 +317,7 @@ SubMachine.prototype = _.create(BaseState.prototype, {
     },
 
     undeploy: function () {
-        var PseudoState, ConnectionPointPseudoState, InitialPseudoState, FinalState;
-        PseudoState = require('./pseudo-states').PseudoState;
+        var ConnectionPointPseudoState, InitialPseudoState, FinalState;
         ConnectionPointPseudoState = require('./pseudo-states').ConnectionPointPseudoState;
         InitialPseudoState = require('./pseudo-states').InitialPseudoState;
         FinalState = require('./states').FinalState;
@@ -332,18 +325,10 @@ SubMachine.prototype = _.create(BaseState.prototype, {
         this._deployed = false;
 
         util.eachElem(this, _.bind(function (elem) {
-            if (elem instanceof BaseState) {
-                if (elem instanceof PseudoState) {
-                    if (elem instanceof ConnectionPointPseudoState) {
-                        elem.removeObserver('sub-root', this);
-                        elem._isMediator = false;
+            if (elem instanceof ConnectionPointPseudoState) {
+                elem.removeObserver('sub-root', this);
+                elem._isMediator = false;
 
-                    } else if (!(elem instanceof InitialPseudoState)) {
-                        logger.error('SubMachineインスタンスはConnectionPointPseudoStateクラス以外の状態を追加できません。');
-                    }
-                } else if (!(elem instanceof SubMachine) && !(elem instanceof FinalState)) {
-                    logger.error('SubMachineインスタンスはConnectionPointPseudoStateクラス以外の状態を保持できません。');
-                }
             }
         }, this));
 
