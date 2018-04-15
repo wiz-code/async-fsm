@@ -14,7 +14,7 @@
 ### ブラウザで使う場合（Browser）
 #### 依存ファイルをCDN経由で取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/b457d5d2/dist/async-fsm.min.js"></script>
+<script src=""></script>
 <script>
 var FSM = require('async-fsm');
 ....
@@ -125,6 +125,7 @@ Machineインスタンスが生成されると、内部的な処理として自�
 
 ###### Machine/State/Transitionクラス共通のプロパティ
  * container: [Regionインスタンス]
+ * root: [Machineインスタンス]
 
 ###### Machine/Stateクラス共通のメソッド
  * addState( State $instance1 [, State $...] )
@@ -181,6 +182,7 @@ newMachine.addState(newState);
  * autoTransition: Bool [false]
  * loop: Bool [false]
  * fps: Int [60]
+ * useRAF: Bool [false]
 
 ###### State/Transitionクラス共通のメソッド
  * getCurrentDepth()
@@ -190,9 +192,9 @@ newMachine.addState(newState);
 
 ###### Machine/Stateクラス共通のメソッド
  * getRegion( Integer $region_index )
- * getRoot()
  * getRegionByName( String $region_name )
  * getRegionById( String $region_id )
+ * findActiveRegion()
  * addState( State $instance1 [, State $...] )
  * addTransition( Transition $instance1 [, Transition $...] )
  * appendRegion( Region $instance )
@@ -206,7 +208,7 @@ newMachine.addState(newState);
  * getElapsedTime()
 
 #### Transitionクラス
-**Transition**クラスはStateインスタンス間のイベントを定義します。インスタンス作成時に遷移前と遷移後のStateインスタンスを指定します。オプションでガード条件やエフェクト（遷移注に実行される振る舞い）を指定することもできます。ただし、<i>guard</i>オプションは必ず真偽値を返す関数を指定しなければなりません。このTransitionインスタンスは<i>trigger()</i>メソッドを持ちます。<i>trigger()</i>メソッドが実行されると、メソッドが記述されたスコープに関係なく即座に状態の遷移が開始されます。また、<i>internal</i>オプションをtrueに指定すると内部遷移となり、ExitアクションとEntryアクションが省略された状態で自己遷移を行います。なお、完了遷移や終了状態に入場後の遷移のように、遷移が<i>trigger()</i>メソッドによらない自動遷移（autoTransitionオプションをONにするか、<i>completion()</i>メソッドによる遷移）の場合、<i>locked</i>オプションをfalseにしてください。
+**Transition**クラスはStateインスタンス間のイベントを定義します。インスタンス作成時に遷移前と遷移後のStateインスタンスを指定します。オプションでガード条件やエフェクト（遷移注に実行される振る舞い）を指定することもできます。ただし、<i>guard</i>オプションは必ず真偽値を返す関数を指定しなければなりません。このTransitionインスタンスは<i>trigger()</i>メソッドを持ちます。<i>trigger()</i>メソッドが実行されると、メソッドが記述されたスコープに関係なく即座に状態の遷移が開始されます。また、<i>internal</i>オプションをtrueに指定すると内部遷移となり、ExitアクションとEntryアクションが省略された状態で自己遷移を行います。なお、完了遷移や終了状態に入場後の遷移のように、遷移が<i>trigger()</i>メソッドによらない自動遷移（autoTransitionオプションをONにするか、<i>completion()</i>メソッドによる遷移）の場合、<i>unlocked</i>オプションをtrueにしてください。
 
     new FSM.Transition( String $transit_name , State $source , State $target [, Object $options] )
 （注）$transit_nameを省略したいときは、第1引数にfalseを指定します。  
@@ -265,7 +267,7 @@ var state1 = new FSM.State(false, {
  * guard: Function [null]
  * effect: Function [null]
  * internal: Bool [false]
- * locked: Bool [true]
+ * unlocked: Bool [false]
 
 ##### Transitionクラスのプロパティ/メソッド
 ###### State/Transitionクラス共通のメソッド
@@ -301,6 +303,7 @@ newMachine.appendRegion(newRegion);
  * getTransitionByName( String $transition_name )
  * getStateById( String $state_id )
  * getTransitionById( String $transition_id )
+ * findActiveState()
  * addState()
  * removeState()
  * addTransition()
@@ -344,8 +347,8 @@ someState.addTransition(choiceToAny);
 マシンをSubMachineクラスでラップすることで、別のステートマシン図のサブマシン状態として再利用できます。そのためにマシン側と、SubMachineインスタンス側双方でリンクさせる入場・退場ポイントを指定する必要があります。
 
 ###### SubMachineクラス固有のメソッド
- * addLink( Machine $instance )
- * removeLink()
+ * link( Machine $instance )
+ * unlink()
 
 ```javascript
 //サブマシン状態にするマシンをラップするオブジェクトを作成
@@ -375,7 +378,7 @@ linkedMachine.deploy();
 //ラッパーオブジェクトとサブマシン状態をリンクさせる
 subMachineEntryPoint.setKey(linkedMachineEntryPoint.getId());
 subMachineExitPoint.setKey(linkedMachineExitPoint.getId());
-subMachine.addLink(linkedMachine);
+subMachine.link(linkedMachine);
 
 subMachine.deploy();
 ```
