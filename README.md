@@ -14,7 +14,7 @@
 ### ブラウザで使う場合（Browser）
 #### 依存ファイルをCDN経由で取得
 ```html
-<script src=""></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/2de3747e/dist/async-fsm.min.js"></script>
 <script>
 var FSM = require('async-fsm');
 ....
