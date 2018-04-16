@@ -83,6 +83,14 @@ myMachine.deploy();
 myMachine.start();
 ```
 
+#### クラスオブジェクトをグローバル名前空間に展開
+```javascript
+FSM.globalize();
+
+//"FSM"を省いて記述できる
+var machine = Machine('new-machine');
+```
+
 #### トレース用メッセージの非表示
 ```javascript
 FSM.logger.disable();
