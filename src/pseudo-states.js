@@ -69,7 +69,7 @@ HistoryPseudoState.prototype = _.create(PseudoState.prototype, {
     _cname: 'HistoryPseudoState',
 
     _activate: function () {
-        var container, state, transit;
+        var container, state;
 
         this._status = 'active';
         logger.info('HistoryPseudoStateインスタンス"' + this._name + '"がアクティブ化されました。');

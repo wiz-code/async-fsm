@@ -2,7 +2,6 @@
 
 var _ = require('underscore');
 
-var Observable = require('./observable')
 var Elem = require('./elem');
 var BaseState = require('./base-state');
 var FinalState = require('./states').FinalState;
@@ -11,7 +10,6 @@ var TerminatePseudoState = require('./pseudo-states').TerminatePseudoState;
 
 var logger = require('./logger');
 var util = require('./util');
-var mixin = require('./mixin');
 
 var Transition = function (name, source, target, options) {
     Elem.call(this, name);
@@ -105,7 +103,7 @@ Transition.prototype = _.create(Elem.prototype, {
                 result = true;
             }
         } catch (e) {}
-        
+
         return result;
     },
 

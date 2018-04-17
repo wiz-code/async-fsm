@@ -31402,7 +31402,6 @@ var _ = require('underscore');
 var Elem = require('./elem');
 var Region = require('./region');
 var logger = require('./logger');
-var util = require('./util');
 
 var ProtoState = function (name) {
     Elem.call(this, name);
@@ -31554,7 +31553,6 @@ ProtoState.prototype = _.create(Elem.prototype, {
     },
 
     appendRegion: function (region) {
-        var Region = require('./region');
         if (this._attached) {
             logger.error('デプロイ後は要素の追加/削除はできません。Machineクラスのundeploy()メソッドでデプロイを取り消してください。');
         }
@@ -31595,8 +31593,7 @@ ProtoState.prototype = _.create(Elem.prototype, {
     },
 
     removeRegion: function (region) {
-        var Region, index;
-        Region = require('./region');
+        var index;
         if (this._attached) {
             logger.error('デプロイ後は要素の追加/削除はできません。Machineクラスのundeploy()メソッドでデプロイを取り消してください。');
         }
@@ -31635,15 +31632,13 @@ ProtoState.prototype = _.create(Elem.prototype, {
 
 module.exports = ProtoState;
 
-},{"./elem":202,"./logger":205,"./region":211,"./util":215,"underscore":192}],202:[function(require,module,exports){
+},{"./elem":202,"./logger":205,"./region":211,"underscore":192}],202:[function(require,module,exports){
 'use strict';
 
 var Promise = require('es6-promise').Promise;
 var _ = require('underscore');
 
 var Entity = require('./entity');
-var logger = require('./logger');
-var util = require('./util');
 var mixin = require('./mixin');
 
 var Elem = function (name) {
@@ -31696,7 +31691,7 @@ Elem.prototype = _.create(Entity.prototype, _.extend({
 
 module.exports = Elem;
 
-},{"./entity":203,"./logger":205,"./mixin":207,"./util":215,"es6-promise":92,"underscore":192}],203:[function(require,module,exports){
+},{"./entity":203,"./mixin":207,"es6-promise":92,"underscore":192}],203:[function(require,module,exports){
 'use strict';
 
 var uuidv4 = require('uuid/v4');
@@ -31775,13 +31770,14 @@ module.exports = Entity;
 
 },{"./logger":205,"./mixin":207,"./model":208,"./subject":213,"./util":215,"underscore":192,"uuid/v4":199}],204:[function(require,module,exports){
 /* Async-FSM.js
- * version 0.5.4
+ * version 0.5.5
  *
  * Copyright (c) 2018 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
  */
+'use strict';
 
-var FSM, logger, State, FinalState, Machine, SubMachine, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
+var FSM, logger, State, FinalState, Machine, SubMachine, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region, util;
 
 logger = require('./logger');
 State = require('./states').State;
@@ -31796,6 +31792,8 @@ EntryPointPseudoState = require('./pseudo-states').EntryPointPseudoState;
 ExitPointPseudoState = require('./pseudo-states').ExitPointPseudoState;
 Transition = require('./transition');
 Region = require('./region');
+
+util = require('./util');
 
 FSM = {
     logger: logger,
@@ -31819,7 +31817,7 @@ FSM = {
 };
 
 function globalize() {
-    var g = (Function('return this')());
+    var g = util.global;
 
     g.Machine = Machine;
     g.State = State;
@@ -31839,7 +31837,7 @@ function globalize() {
 
 module.exports = FSM;
 
-},{"./logger":205,"./machines":206,"./pseudo-states":210,"./region":211,"./states":212,"./transition":214}],205:[function(require,module,exports){
+},{"./logger":205,"./machines":206,"./pseudo-states":210,"./region":211,"./states":212,"./transition":214,"./util":215}],205:[function(require,module,exports){
 'use strict';
 
 var _ = require('underscore');
@@ -32092,7 +32090,7 @@ Machine.prototype = _.create(BaseState.prototype, {
         }
     },
 
-    _onAborted: function (state) {
+    _onAborted: function () {
         logger.info('Machineインスタンス"' + this._name + '"は処理を停止しました。');
     },
 
@@ -32205,7 +32203,7 @@ SubMachine.prototype = _.create(BaseState.prototype, {
 
         this._deployed = true;
 
-        util.eachElem(this, _.bind(function (elem) {console.log(elem._name)
+        util.eachElem(this, _.bind(function (elem) {
             if (elem instanceof ConnectionPointPseudoState) {
                 elem.addObserver('sub-root', this);
 
@@ -32579,7 +32577,7 @@ function $has(query, elem) {
     if (!result) {
         next = elem._type === 'region' ? elem.parent : elem.container;
         if (!_.isNull(next)) {
-            result = $has(query, parent);
+            result = $has(query, next);
         }
     }
 
@@ -32595,7 +32593,7 @@ function $get(query, elem) {
             result = $get(query, next);
         }
     }
-    
+
     return result;
 }
 
@@ -32755,7 +32753,7 @@ Model.prototype = _.create(Observable.prototype, {
 
         _validate(value, 'json');
         this._set(query, value, '_data');
-        event = oldValue == null ? 'create' : 'update';
+        event = _.isNull(oldValue) || _.isUndefined(oldValue) ? 'create' : 'update';
         this._bubbling(event, query, value, oldValue);
 
         return value;
@@ -33095,7 +33093,7 @@ function _search(list, data) {
 
 function _normalizeQuery(query) {
     if (!_.isString(query)) {
-        logger.error('クエリは文字列で指定してください。')
+        logger.error('クエリは文字列で指定してください。');
     }
 
     if (query !== DELIMITER) {
@@ -33269,7 +33267,7 @@ HistoryPseudoState.prototype = _.create(PseudoState.prototype, {
     _cname: 'HistoryPseudoState',
 
     _activate: function () {
-        var container, state, transit;
+        var container, state;
 
         this._status = 'active';
         logger.info('HistoryPseudoStateインスタンス"' + this._name + '"がアクティブ化されました。');
@@ -34255,7 +34253,6 @@ module.exports = Subject;
 
 var _ = require('underscore');
 
-var Observable = require('./observable')
 var Elem = require('./elem');
 var BaseState = require('./base-state');
 var FinalState = require('./states').FinalState;
@@ -34264,7 +34261,6 @@ var TerminatePseudoState = require('./pseudo-states').TerminatePseudoState;
 
 var logger = require('./logger');
 var util = require('./util');
-var mixin = require('./mixin');
 
 var Transition = function (name, source, target, options) {
     Elem.call(this, name);
@@ -34358,7 +34354,7 @@ Transition.prototype = _.create(Elem.prototype, {
                 result = true;
             }
         } catch (e) {}
-        
+
         return result;
     },
 
@@ -34463,15 +34459,16 @@ Transition.prototype = _.create(Elem.prototype, {
 
 module.exports = Transition;
 
-},{"./base-state":201,"./elem":202,"./logger":205,"./mixin":207,"./observable":209,"./pseudo-states":210,"./states":212,"./util":215,"underscore":192}],215:[function(require,module,exports){
+},{"./base-state":201,"./elem":202,"./logger":205,"./pseudo-states":210,"./states":212,"./util":215,"underscore":192}],215:[function(require,module,exports){
 'use strict';
 
 var _ = require('underscore');
 
-var global = (function () {
-    return Function('return this')();
-}());
-
+var global = (function (fn) {
+    //return Function('return this')();
+    return (fn('return this')());
+}(Function));
+console.log('global', global);
 var util = {
     global: global,
 

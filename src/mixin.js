@@ -242,7 +242,7 @@ function $has(query, elem) {
     if (!result) {
         next = elem._type === 'region' ? elem.parent : elem.container;
         if (!_.isNull(next)) {
-            result = $has(query, parent);
+            result = $has(query, next);
         }
     }
 
@@ -258,7 +258,7 @@ function $get(query, elem) {
             result = $get(query, next);
         }
     }
-    
+
     return result;
 }
 

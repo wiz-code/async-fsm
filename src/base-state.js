@@ -5,7 +5,6 @@ var _ = require('underscore');
 var Elem = require('./elem');
 var Region = require('./region');
 var logger = require('./logger');
-var util = require('./util');
 
 var ProtoState = function (name) {
     Elem.call(this, name);
@@ -157,7 +156,6 @@ ProtoState.prototype = _.create(Elem.prototype, {
     },
 
     appendRegion: function (region) {
-        var Region = require('./region');
         if (this._attached) {
             logger.error('デプロイ後は要素の追加/削除はできません。Machineクラスのundeploy()メソッドでデプロイを取り消してください。');
         }
@@ -198,8 +196,7 @@ ProtoState.prototype = _.create(Elem.prototype, {
     },
 
     removeRegion: function (region) {
-        var Region, index;
-        Region = require('./region');
+        var index;
         if (this._attached) {
             logger.error('デプロイ後は要素の追加/削除はできません。Machineクラスのundeploy()メソッドでデプロイを取り消してください。');
         }

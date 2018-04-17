@@ -1,11 +1,12 @@
 /* Async-FSM.js
- * version 0.5.5
+ * version 0.5.6
  *
  * Copyright (c) 2018 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
  */
+'use strict';
 
-var FSM, logger, State, FinalState, Machine, SubMachine, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region;
+var FSM, logger, State, FinalState, Machine, SubMachine, InitialPseudoState, HistoryPseudoState, TerminatePseudoState, ChoicePseudoState, EntryPointPseudoState, ExitPointPseudoState, Transition, Region, util;
 
 logger = require('./logger');
 State = require('./states').State;
@@ -20,6 +21,8 @@ EntryPointPseudoState = require('./pseudo-states').EntryPointPseudoState;
 ExitPointPseudoState = require('./pseudo-states').ExitPointPseudoState;
 Transition = require('./transition');
 Region = require('./region');
+
+util = require('./util');
 
 FSM = {
     logger: logger,
@@ -43,7 +46,7 @@ FSM = {
 };
 
 function globalize() {
-    var g = (Function('return this')());
+    var g = util.global;
 
     g.Machine = Machine;
     g.State = State;

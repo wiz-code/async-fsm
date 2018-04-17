@@ -53,7 +53,7 @@ Model.prototype = _.create(Observable.prototype, {
 
         _validate(value, 'json');
         this._set(query, value, '_data');
-        event = oldValue == null ? 'create' : 'update';
+        event = _.isNull(oldValue) || _.isUndefined(oldValue) ? 'create' : 'update';
         this._bubbling(event, query, value, oldValue);
 
         return value;
@@ -393,7 +393,7 @@ function _search(list, data) {
 
 function _normalizeQuery(query) {
     if (!_.isString(query)) {
-        logger.error('クエリは文字列で指定してください。')
+        logger.error('クエリは文字列で指定してください。');
     }
 
     if (query !== DELIMITER) {

@@ -4,8 +4,6 @@ var Promise = require('es6-promise').Promise;
 var _ = require('underscore');
 
 var Entity = require('./entity');
-var logger = require('./logger');
-var util = require('./util');
 var mixin = require('./mixin');
 
 var Elem = function (name) {

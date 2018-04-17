@@ -185,7 +185,7 @@ Machine.prototype = _.create(BaseState.prototype, {
         }
     },
 
-    _onAborted: function (state) {
+    _onAborted: function () {
         logger.info('Machineインスタンス"' + this._name + '"は処理を停止しました。');
     },
 
@@ -298,7 +298,7 @@ SubMachine.prototype = _.create(BaseState.prototype, {
 
         this._deployed = true;
 
-        util.eachElem(this, _.bind(function (elem) {console.log(elem._name)
+        util.eachElem(this, _.bind(function (elem) {
             if (elem instanceof ConnectionPointPseudoState) {
                 elem.addObserver('sub-root', this);
 

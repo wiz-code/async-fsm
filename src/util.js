@@ -2,9 +2,9 @@
 
 var _ = require('underscore');
 
-var global = (function () {
-    return Function('return this')();
-}());
+var global = (function (fn) {
+    return (fn('return this')());
+}(Function));
 
 var util = {
     global: global,
