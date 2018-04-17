@@ -1,6 +1,6 @@
 {
   "name": "@wiz-code/async-fsm",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Finite StateMachine JavaScript Library",
   "keywords": [
     "FSM",
@@ -20,10 +20,29 @@
   },
   "devDependencies": {
     "browserify": "^14.4.0",
+    "espowerify": "^1.1.0",
     "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-espower": "^1.1.0",
+    "gulp-jshint": "^2.1.0",
+    "gulp-mocha": "^5.0.0",
+    "gulp-nodeunit": "^0.1.0",
     "gulp-rename": "^1.2.2",
     "gulp-sourcemaps": "^2.6.1",
     "gulp-uglify": "^3.0.0",
+    "intelli-espower-loader": "^1.0.1",
+    "jshint": "^2.9.5",
+    "jshint-stylish": "^2.2.1",
+    "karma": "^2.0.0",
+    "karma-browserify": "^5.2.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-mocha": "^1.3.0",
+    "karma-mocha-reporter": "^2.2.5",
+    "karma-phantomjs-launcher": "^1.0.4",
+    "mocha": "^5.1.0",
+    "phantom": "^4.0.12",
+    "power-assert": "^1.5.0",
+    "sinon": "^4.5.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
   }

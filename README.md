@@ -14,7 +14,7 @@
 ### ブラウザで使う場合（Browser）
 #### 依存ファイルをCDN経由で取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/2de3747e/dist/async-fsm.min.js"></script>
+<script src="https://cdn.rawgit.com/wiz-code/async-fsm/4e28090d/dist/async-fsm.min.js"></script>
 <script>
 var FSM = require('async-fsm');
 ....
@@ -190,7 +190,7 @@ newMachine.addState(newState);
  * autoTransition: Bool [false]
  * loop: Bool [false]
  * fps: Int [60]
- * useRAF: Bool [false]
+ * useRAF: Bool [false] //ループ処理にRequestAnimationFrame()を使う。ブラウザ環境で利用可能
 
 ###### State/Transitionクラス共通のメソッド
  * getCurrentDepth()
@@ -202,7 +202,7 @@ newMachine.addState(newState);
  * getRegion( Integer $region_index )
  * getRegionByName( String $region_name )
  * getRegionById( String $region_id )
- * findActiveRegion()
+ * filterActiveRegion()
  * addState( State $instance1 [, State $...] )
  * addTransition( Transition $instance1 [, Transition $...] )
  * appendRegion( Region $instance )

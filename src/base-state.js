@@ -48,8 +48,8 @@ ProtoState.prototype = _.create(Elem.prototype, {
         });
     },
 
-    findActiveRegion: function () {
-        return _.find(this.children, function (region) {
+    filterActiveRegion: function () {
+        return _.filter(this.children, function (region) {
             return region.isActive();
         });
     },
