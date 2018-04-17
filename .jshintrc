@@ -9,11 +9,7 @@
 
   "strict": "global",
   "indent": 4,
-  "globals": {
-    "_": true
-  },
 
   "browser": true,
-  "node": true,
-  "jquery": true
+  "node": true
 }

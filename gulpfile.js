@@ -12,14 +12,14 @@ var nodeunit = require('gulp-nodeunit');
 var espower = require('gulp-espower');
 var Server = require('karma').Server;
 
-gulp.task('jslint', function () {
+gulp.task('jshint', function () {
     gulp.src(['./src/**/*.js']).
         pipe(jshint()).
         pipe(jshint.reporter('jshint-stylish')).
         pipe(jshint.reporter('fail'));
 });
 
-gulp.task('build', ['jslint'], function () {
+gulp.task('build', ['jshint'], function () {
     gulp.src(['./src/index']).
     pipe(jshint()).
     pipe(jshint.reporter('jshint-stylish')).
