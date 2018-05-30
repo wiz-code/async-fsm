@@ -9,6 +9,54 @@ FSM.globalize();
 FSM.logger.setLogLevel('error');
 
 describe('State', function () {
+    describe('#$setProp()', function () {
+        var state, subState;
+
+        before(function () {
+            state = new State('state', {
+                props: {
+                    value: 0,
+                },
+            });
+
+            subState = new State('sub-state');
+
+            state.addState(subState);
+        });
+
+        it('should set 100 to parent element "value" prop', function (done) {
+            subState.$setProp('value', 100);
+            if (state.getProp('value') === 100) {
+                done();
+            }
+        });
+    });
+
+    describe('#$setMethod()', function () {
+        var state, subState;
+
+        before(function () {
+            state = new State('state', {
+                methods: {
+                    func: function () {
+                        return 100;
+                    },
+                },
+            });
+
+            subState = new State('sub-state');
+
+            state.addState(subState);
+        });
+
+        it('should invoke parent element "func" method and return 100', function (done) {
+            var func = subState.$getMethod('func');
+            if (func() === 100) {
+                done();
+            }
+        });
+    });
+
     describe('#setMethod()', function () {
         var state;
 
