@@ -47,8 +47,13 @@ var mixin = {
         },
 
         setMethod: function (query, object, context) {
-            context = !_.isUndefined(context) ? context : this;
-            return this.model.setMethod(query, object, context);
+            if (!_.isString(query)) {
+                object = !_.isUndefined(object) ? object : this;
+                return this.model.setMethod(query, object);
+            } else {
+                context = !_.isUndefined(context) ? context : this;
+                return this.model.setMethod(query, object, context);
+            }
         },
 
         watch: function (query, listener) {

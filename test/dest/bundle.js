@@ -31912,7 +31912,7 @@ module.exports = Entity;
 
 },{"./logger":205,"./mixin":207,"./model":208,"./subject":213,"./util":215,"underscore":192,"uuid/v4":199}],204:[function(require,module,exports){
 /* Async-FSM.js
- * version 0.5.6
+ * version 0.5.7
  *
  * Copyright (c) 2018 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -32524,8 +32524,13 @@ var mixin = {
         },
 
         setMethod: function (query, object, context) {
-            context = !_.isUndefined(context) ? context : this;
-            return this.model.setMethod(query, object, context);
+            if (!_.isString(query)) {
+                object = !_.isUndefined(object) ? object : this;
+                return this.model.setMethod(query, object);
+            } else {
+                context = !_.isUndefined(context) ? context : this;
+                return this.model.setMethod(query, object, context);
+            }
         },
 
         watch: function (query, listener) {
@@ -35330,6 +35335,22 @@ var sinon = require('sinon');
 FSM.globalize();
 FSM.logger.setLogLevel('error');
 describe('State', function () {
+    describe('#setMethod()', function () {
+        var state;
+        before(function () {
+            state = new State('state', {
+                methods: {
+                    init: function (done) {
+                        if (this.getName() === 'state') {
+                        }
+                    }
+                }
+            });
+        });
+        it('should bind "self" with "this", when init() invoked', function (done) {
+            state.methods.init(done);
+        });
+    });
     describe('#entryAction()', function () {
         var machine, state, transit, spy;
         before(function () {

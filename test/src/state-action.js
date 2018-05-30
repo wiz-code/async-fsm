@@ -9,6 +9,26 @@ FSM.globalize();
 FSM.logger.setLogLevel('error');
 
 describe('State', function () {
+    describe('#setMethod()', function () {
+        var state;
+
+        before(function () {
+            state = new State('state', {
+                methods: {
+                    init: function (done) {
+                        if (this.getName() === 'state') {
+                            done();
+                        }
+                    },
+                },
+            });
+        });
+
+        it('should bind "self" with "this", when init() invoked', function (done) {
+            state.methods.init(done);
+        });
+    });
+
     describe('#entryAction()', function () {
         var machine, state, transit, spy;
 
