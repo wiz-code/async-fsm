@@ -34,15 +34,6 @@ var mixin = {
             this.model.clear();
         },
 
-        addProp: function (object) {
-            return this.model.addProp(object);
-        },
-
-        addMethod: function (object, context) {
-            context = !_.isUndefined(context) ? context : this;
-            return this.model.addMethod(object, context);
-        },
-
         getProp: function (query) {
             return this.model.getProp(query);
         },
@@ -129,14 +120,6 @@ var mixin = {
         },
 
         clear: function () {
-            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
-        },
-
-        addProp: function () {
-            logger.error(this._cname + 'インスタンスは内部データを保持できません。');
-        },
-
-        addMethod: function () {
             logger.error(this._cname + 'インスタンスは内部データを保持できません。');
         },
 

@@ -48,11 +48,11 @@ var Transition = function (name, source, target, options) {
     this.save();
 
     if (!_.isUndefined(options.props)) {
-        this.addProp(options.props);
+        this.setProp(options.props);
     }
 
     if (!_.isUndefined(options.methods)) {
-        this.addMethod(options.methods);
+        this.setMethod(options.methods);
     }
 
     this.container = null;

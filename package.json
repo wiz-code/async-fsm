@@ -1,6 +1,6 @@
 {
   "name": "@wiz-code/async-fsm",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "Finite StateMachine JavaScript Library",
   "keywords": [
     "FSM",
@@ -15,7 +15,7 @@
   "repository": "https://github.com/wiz-code/async-fsm.git",
   "dependencies": {
     "es6-promise": "^4.2.4",
-    "underscore": "^1.8.3",
+    "underscore": "^1.9.0",
     "uuid": "^3.0.1"
   },
   "devDependencies": {

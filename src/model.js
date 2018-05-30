@@ -24,17 +24,11 @@ getPrototypeOf = Object.getPrototypeOf;
 Model = function (data) {
     Observable.call(this);
 
-    this._data = undefined;
-    this._savedData = undefined;
-    this.props = undefined;
-    this.methods = undefined;
+    this._data = this._savedData = this.props = this.methods = undefined;
     this._cache = {};
-    this._events = [];
 
     if (!_.isUndefined(data)) {
-        var start = performance.now();
         this.set(data);
-        console.log('set() performance: ', performance.now() - start);
     }
 };
 
@@ -44,216 +38,215 @@ Model.prototype = _.create(Observable.prototype, {
     _cname: 'Model',
 
     has: function (query) {
-        var value;
-        query = _normalizeQuery(query);
-        value = this._test('_get', query);
-        return !_.isUndefined(value);
+        return !_.isUndefined(this.get(query));
     },
 
     get: function (query) {
-        var value;
+        var path, value;
         query = _normalizeQuery(query);
-        value = this._get(query);
+        path = _parseQuery(query);
+        value = this._cache[query];
+
+        if (_.isUndefined(value)) {
+            if (path.length) {
+                value = _.property(path)(this._data);
+
+            } else {
+                value = this._data;
+            }
+
+            if (!_.isUndefined(value)) {
+                this._cache[query] = value;
+            }
+        }
+
         return value;
     },
 
     set: function (query, value) {
-        var oldValue, newValue;
+        var collection, path, oldValue, parentPath, parent;
         if (_.isUndefined(value)) {
             value = query;
             query = DELIMITER;
         }
 
-        this._events.length = 0;
+        collection = [];
 
         query = _normalizeQuery(query);
-        oldValue = this._get(query);
+        path = _parseQuery(query);
+        oldValue = this.get(query);
         if (!_.isUndefined(oldValue)) {
             if (_.isEqual(oldValue, value)) {
                 return value;
             }
-var start = performance.now();
-            if (_isObject(oldValue)) {
-                this._unsetObject(query, oldValue);
+            _collect(oldValue, query, collection, 'delete');
+        }
 
+        _collect(value, query, collection, 'create');
+
+        if (path.length) {
+            parentPath = _.initial(path);
+
+            if (parentPath.length) {
+                parent = _.property(parentPath)(this._data);
             } else {
-                this._unset(query);
+                parent = this._data;
             }
-console.log('unset() performance: ', query, performance.now() - start);
-        }
-var start = performance.now();
-        if (_isObject(value)) {
-            newValue = this._setObject(query, value);
 
+            parent[_.last(path)] = value;
         } else {
-            newValue = this._set(query, value);
+            this._data = value;
         }
-console.log('performance: ', query, performance.now() - start);
-//console.log(this._events);
 
-        var uniq = _.chain(this._events).groupBy('query').map(function (object, key) {
-            if (_.size(object) === 1) {
-                return _.first(object);
-
-            } else {
+        _.each(_.map(_.groupBy(collection, '0'), function (array, key) {
+            if (array.length > 1) {
                 return {
                     event: 'update',
-                    query: key,
-                    value: object[1].value,
-                    oldValue: object[0].value,
+                    target: array[0][0],
+                    value: array[1][2],
+                    oldValue: array[0][2],
+                };
+            } else {
+                return {
+                    target: key,
+                    event: array[0][1],
+                    value: array[0][2],
                 };
             }
-        });
-
-        //console.log(uniq.value());
-        /*_.each(uniq, function (q) {
-            _.each(this._events, function () {
-
-            }, this);
-        }, this);*/
-        //event = !_.isUndefined(oldValue) ? 'update' : 'create';
-        //this._bubbling(event, query, newValue, oldValue);
-        return newValue;
-    },
-
-    _setObject: function (query, object, parent) {
-        var destination, propNamePath;
-        destination = _.isArray(object) ? [] : {};
-        propNamePath = _parseQuery(query);
-
-        _.each(object, function (value, key) {
-            var path, currentQuery;
-            path = propNamePath.slice(0);
-            path.push(key);
-            currentQuery = path.join(DELIMITER);
-
-            if (_isObject(value)) {
-                value = this._setObject(currentQuery, value, destination);
-
-            } else {
-                this._set(currentQuery, value, destination);
+        }), function (object) {
+            if (!_.isUndefined(this._cache[object.target])) {
+                if (object.event === 'delete') {
+                    delete this._cache[object.target];
+                } else {
+                    this._cache[object.target] = object.value;
+                }
             }
-            //this._bubbling('create', currentQuery, val);
+
+            this._bubbling(object);
         }, this);
-
-        this._set(query, destination, parent);
-
-        return destination;
-    },
-
-    _unsetObject: function (query, object) {
-        var propNamePath = _parseQuery(query);
-        _.each(object, function (value, key) {
-            var path, currentQuery;
-            path = propNamePath.slice(0);
-            path.push(key);
-            currentQuery = path.join(DELIMITER);
-
-            if (_isObject(value)) {
-                this._unsetObject(currentQuery, value);
-
-            } else {
-                this._unset(currentQuery);
-            }
-        }, this);
-
-        this._unset(query);
-
-        return object;
     },
 
     unset: function (query) {
-        var value;
-        this._events.length = 0;
+        var collection, path, value, parentPath, parent;
+        collection = [];
 
         query = _normalizeQuery(query);
-        value = this._get(query);
-        if (!_.isUndefined(value)) {
-            if (_isObject(value)) {
-                this._unsetObject(query, value);
+        path = _parseQuery(query);
+        value = this.get(query);
 
+        if (!_.isUndefined(value)) {
+            _collect(value, query, collection, 'delete');
+
+            if (path.length) {
+                parentPath = _.initial(path);
+
+                if (parentPath.length) {
+                    parent = _.property(parentPath)(this._data);
+                } else {
+                    parent = this._data;
+                }
+
+                delete parent[_.last(path)];
             } else {
-                value = this._unset(query);
+                this._data = undefined;
             }
-//console.log(this._events);
-            //this._bubbling('delete', query, value);
+
+            _.each(_.map(collection, function (array) {
+                return {
+                    target: array[0],
+                    event: 'delete',
+                    value: array[2],
+                };
+            }), function (object) {
+                delete this._cache[object.target];
+                this._bubbling(object);
+            }, this);
         }
 
         return value;
     },
 
     save: function () {
-        this._savedData = _extend(this._savedData, this._data);
+        this._savedData = _extend(null, this._data);
     },
 
     restore: function () {
-        if (!_.isNull(this._savedData)) {
-            this._data = _extend(null, this._savedData);
+        if (!_.isUndefined(this._savedData)) {
+            this.set(this._savedData);
         }
     },
 
     clear: function () {
-        this._data = this._savedData = null;
+        this._data = this._savedData = undefined;
     },
 
-    addProp: function (object) {
-        _validateEach(object, 'not-function');
-        this.props = _extend(this.props, object);
-        return this.props;
+    _get: function (type, query) {
+        var path, value;
+        query = _normalizeQuery(query);
+        path = _parseQuery(query);
+        if (path.length) {
+            value = _.property(path)(this[type]);
+
+        } else {
+            value = this[type];
+        }
+
+        return value;
     },
 
-    addMethod: function (object, context) {
-        _validateEach(object, 'function-only');
-        this.methods = _extendMethod(this.methods, object, context);
-        return this.methods;
+    _set: function (type, query, value, context) {
+        var path, validType, parentPath, parent;
+        if (!_.isString(query)) {
+            context = value;
+            value = query;
+            query = DELIMITER;
+        }
+
+        query = _normalizeQuery(query);
+        path = _parseQuery(query);
+
+        validType = type === 'props' ? 'not-function' : 'function-only';
+        _validateEach(value, validType);
+
+        if (path.length) {
+            parentPath = _.initial(path);
+
+            if (parentPath.length) {
+                parent = _.property(parentPath)(this[type]);
+            } else {
+                parent = this[type];
+            }
+
+            if (type === 'props') {
+                parent[_.last(path)] = value;
+            } else {
+                parent[_.last(path)] = _bind(value, context);
+            }
+        } else {
+            if (type === 'props') {
+                this[type] = value;
+            } else {
+                this[type] = _bind(value, context);
+            }
+        }
+
+        return value;
     },
 
     getProp: function (query) {
-        var list, result;
-        query = _normalizeQuery(query);
-        list = _parseQuery(query);
-        result = this._test('_get', list, this.props);
-        return result;
+        return this._get('props', query);
     },
 
     setProp: function (query, prop) {
-        var list;
-        if (_.isUndefined(prop)) {
-            prop = query;
-            query = DELIMITER;
-        }
-
-        query = _normalizeQuery(query);
-        list = _parseQuery(query);
-
-        _validateEach(prop, 'not-function');
-        this._set(list, prop, 'props');
-
-        return prop;
+        return this._set('props', query, prop);
     },
 
     getMethod: function (query) {
-        var list, result;
-        query = _normalizeQuery(query);
-        list = _parseQuery(query);
-        result = this._test('_get', list, this.methods);
-        return result;
+        return this._get('methods', query);
     },
 
     setMethod: function (query, method, context) {
-        var list;
-        if (_.isUndefined(method)) {
-            method = query;
-            query = DELIMITER;
-        }
-
-        query = _normalizeQuery(query);
-        list = _parseQuery(query);
-
-        _validateEach(method, 'function-only');
-        this._setMethod(list, method, context);
-
-        return method;
+        return this._set('methods', query, method, context);
     },
 
     _test: function (method) {
@@ -268,132 +261,9 @@ console.log('performance: ', query, performance.now() - start);
         return result;
     },
 
-    _get: function (query) {
-        var path, value;
-        path = _parseQuery(query);
-        value = this._cache[query];
-
-        if (_.isUndefined(value)) {
-            if (path.length) {
-                value = _.property(path)(this._data);
-
-            } else {
-                value = this._data;
-            }
-
-            this._cache[query] = value;
-        }
-
-        return value;
-    },
-
-    _set: function (query, value, parent) {
-        var path, parentPath, lastPropName;
-        path = _parseQuery(query);
-        _validate(value, 'json');
-
-        if (path.length) {
-            lastPropName = _.last(path);
-            parentPath = _.initial(path);
-
-            if (_.isUndefined(parent)) {
-                if (parentPath.length) {
-                    parent = _.property(parentPath)(this._data);
-
-                } else {
-                    parent = this._data;
-                }
-            }
-
-            parent[lastPropName] = value;
-        } else {
-            this._data = value;
-        }
-
-        this._events.push({
-            event: 'create',
-            query: query,
-            value: value,
-        });
-
-        return value;
-    },
-
-    _unset: function (query, parent) {
-        var path, parentPath, lastPropName, value;
-        path = _parseQuery(query);
-
-        if (path.length) {
-            lastPropName = _.last(path);
-            parentPath = _.initial(path);
-
-            if (_.isUndefined(parent)) {
-                if (parentPath.length) {
-                    parent = _.property(parentPath)(this._data);
-
-                } else {
-                    parent = this._data;
-                }
-            }
-//console.log('unset path', path);
-            value = parent[lastPropName];
-            delete parent[lastPropName];
-
-        } else {
-            value = this._data;
-            delete this._data;
-        }
-
-        if (!_.isUndefined(this._cache[query])) {
-            delete this._cache[query];
-        }
-
-        this._events.push({
-            event: 'delete',
-            query: query,
-            value: value,
-        });
-
-        return value;
-    },
-
-    _setMethod: function (query, method, context) {
-        var methodNameList, lastMethodName, reference;
-        methodNameList = _parseQuery(query);
-
-        if (!_exists(methodNameList, this.methods)) {
-            logger.error('クエリに対応するデータ構造が存在しません。');
-        }
-
-        if (!methodNameList.length) {
-            this.methods = _extendMethod(this.methods, method, context);
-
-        } else {
-            lastMethodName = methodNameList.pop();
-            reference = _search(methodNameList, this.methods);
-            if (_isPlainObject(method)) {
-                reference[lastMethodName] = {};
-                _extendMethod(reference[lastMethodName], method, context);
-
-            } else {
-                reference[lastMethodName] = method;
-            }
-        }
-
-        return method;
-    },
-
-    _bubbling: function (event, query, value, oldValue) {
-        var propNamePath, currentTarget, object;
-        query = _normalizeQuery(query);
-        propNamePath = _parseQuery(query);
-        object = {
-            event: event,
-            currentTarget: '',
-            target: query,
-            value: value,
-            oldValue: oldValue,
-        };
+    _bubbling: function (object) {
+        var propNamePath, currentTarget;
+        propNamePath = _parseQuery(object.target);
 
         while (propNamePath.length) {
             currentTarget = propNamePath.join(DELIMITER);
@@ -431,17 +301,43 @@ console.log('performance: ', query, performance.now() - start);
     },
 });
 
+function _collect(object, query, collection, event) {
+    collection = collection || [];
+
+    if (event === 'create') {
+        _validate(object, 'json');
+    }
+
+    if (_.isObject(object)) {
+        _.each(object, function (value, key) {
+            var path = (query !== DELIMITER ? query + '/' : '') + key;
+            _collect(value, path, collection, event);
+        });
+    }
+
+    collection.push([query, event, object]);
+
+    return collection;
+}
+
+function _bind(object, context) {
+    if (_.isArray(object) || _isPlainObject(object)) {
+        _.each(object, function (value, key) {
+            object[key] = _bind(value, context);
+        });
+    } else {
+        object = _.bind(object, context);
+    }
+
+    return object;
+}
+
 function _extend(dest, src) {
     dest = dest || (_.isArray(src) ? [] : {});
 
     _.each(src, function (value, key) {
-        if (_.isArray(value)) {
-            dest[key] = [];
-            _extend(dest[key], value);
-
-        } else if (_isPlainObject(value)) {
-            dest[key] = {};
-            _extend(dest[key], value);
+        if (_.isArray(value) || _isPlainObject(value)) {
+            dest[key] = _extend(null, value);
 
         } else {
             dest[key] = value;
@@ -454,9 +350,9 @@ function _extend(dest, src) {
 function _validateEach(value, required) {
     var result = false;
 
-    if (_isObject(value)) {
-        result = _.every(value, function (val) {
-            return _validateEach(val, required);
+    if (_.isArray(value) || _isPlainObject(value)) {
+        result = _.every(value, function (element) {
+            return _validateEach(element, required);
         });
     } else {
         result = _validate(value, required);
@@ -470,9 +366,8 @@ function _validate(value, required) {
 
     switch (required) {
         case 'json':
-        if (_.isString(value) || _.isNumber(value) ||
-            _.isBoolean(value) || _.isNull(value) ||
-            _isObject(value)) {
+        if (_isPlainObject(value) || _.isArray(value) || _.isNull(value) ||
+        _.isString(value) || _.isNumber(value) || _.isBoolean(value)) {
             result = true;
 
         } else {
@@ -503,28 +398,6 @@ function _validate(value, required) {
     return result;
 }
 
-function _extendMethod(dest, object, context) {
-    dest = dest || (_.isArray(object) ? [] : {});
-
-    _.each(object, function (value, key) {
-        var method;
-        if (_.isArray(value)) {
-            dest[key] = [];
-            _extendMethod(dest[key], value, context);
-
-        } else if (_isPlainObject(value)) {
-            dest[key] = {};
-            _extendMethod(dest[key], value, context);
-
-        } else {
-            method = _.bind(value, context);
-            dest[key] = method;
-        }
-    });
-
-    return dest;
-}
-
 function _normalizeQuery(query) {
     if (!_.isString(query)) {
         logger.error('クエリは文字列で指定してください。');
@@ -538,8 +411,11 @@ function _normalizeQuery(query) {
 }
 
 function _parseQuery(query) {
-    var result = _.compact(query.split(DELIMITER));
-    return result;
+    if (query !== DELIMITER) {
+        return query.split(DELIMITER);
+    } else {
+        return [];
+    }
 }
 
 function _isPlainObject(obj) {
@@ -551,14 +427,6 @@ function _isPlainObject(obj) {
             proto = getPrototypeOf(proto);
         }
         result = getPrototypeOf(obj) === proto;
-    }
-    return result;
-}
-
-function _isObject(object) {
-    var result = false;
-    if (_.isArray(object) || _isPlainObject(object)) {
-        result = true;
     }
     return result;
 }

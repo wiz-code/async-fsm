@@ -36,7 +36,7 @@ exports.model = function (test) {
     model.set('hoge', 'foo');
 
     model.clear();
-    test.equal(model._data, null);
+    test.strictEqual(model._data, undefined);
 
     model.set({
         a: {
@@ -76,9 +76,11 @@ exports.model = function (test) {
     model.restore();
     test.equal(model.get('user/0/id'), 'wiz-code');
 
-    test.throws(model.addProp.bind(null, {func: _.noop}));
+    test.throws(function () {
+        model.setProp({func: _.noop});
+    });
 
-    model.addProp({
+    model.setProp({
         id: 'wiz-code',
         password: 'secret',
         credit: {
@@ -91,17 +93,17 @@ exports.model = function (test) {
     test.equal(model.props.credit.number, '77777');
     test.equal(model.props.id, 'wiz-code');
     test.equal(model.props.password, 'secret');
-    model.addProp({password: 'new-secret'});
+    model.setProp('password', 'new-secret');
     test.equal(model.props.password, 'new-secret');
 
     test.throws(function () {
-        model.addMethod({
+        model.setMethod({
             name: 'John',
         }, model);
     });
 
     test.throws(function () {
-        model.addMethod({
+        model.setMethod({
             user: {
                 loggedOn: false,
             }
@@ -112,7 +114,7 @@ exports.model = function (test) {
         '#1': 'jazz',
         '#2': 'click',
     };
-    model.addMethod({
+    model.setMethod({
         play: {
             music: function () {
                 test.equal(this['#1'], 'jazz');
@@ -124,6 +126,7 @@ exports.model = function (test) {
     }, track);
     model.methods.play.music();
     model.methods.play.se();
+
     model.getMethod('play/music')();
     model.getMethod('play/se')();
 
