@@ -2,7 +2,7 @@ var Model = require('../../src/model');
 var _ = require('underscore');
 
 exports.model = function (test) {
-    test.expect(31);
+    test.expect(37);
 
     var model = new Model({hoge: 'fuga'});
     var callback1 = function (a, b, c) {
@@ -36,6 +36,7 @@ exports.model = function (test) {
     model.set('hoge', 'foo');
 
     model.clear();
+    test.ok(_.isEmpty(model._cache));
     test.strictEqual(model._data, undefined);
 
     model.set({
@@ -62,6 +63,12 @@ exports.model = function (test) {
     test.equal(model.get('a/b/2/f/g'), undefined);
 
     model.clear();
+
+    model.set('hoge');
+    test.equal(model.get(), 'hoge');
+    model.save();
+    test.equal(model._cache['/'], 'hoge');
+
     model.set({
         user: [
             {
@@ -69,12 +76,15 @@ exports.model = function (test) {
             },
         ]
     });
+    test.equal(model._cache['user/0/id'], undefined);
     test.equal(model.get('user/0/id'), 'wiz-code');
+    test.equal(model._cache['user/0/id'], 'wiz-code');
     model.save();
     model.set('user/0/id', 'wizard-code');
     test.equal(model.get('user/0/id'), 'wizard-code');
     model.restore();
     test.equal(model.get('user/0/id'), 'wiz-code');
+    test.equal(model._cache['user/0/id'], 'wiz-code');
 
     test.throws(function () {
         model.setProp({func: _.noop});

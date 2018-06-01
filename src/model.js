@@ -98,22 +98,28 @@ Model.prototype = _.create(Observable.prototype, {
             this._data = value;
         }
 
-        _.each(_.map(_.groupBy(collection, '0'), function (array, key) {
+        _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
+            var deleted, created, object;
             if (array.length > 1) {
-                return {
-                    event: 'update',
-                    target: array[0][0],
-                    value: array[1][2],
-                    oldValue: array[0][2],
-                };
+                deleted = array[0];
+                created = array[1];
+                if (!_.isEqual(deleted[2], created[2])) {
+                    return {
+                        event: 'update',
+                        target: deleted[0],
+                        value: created[2],
+                        oldValue: deleted[2],
+                    };
+                }
             } else {
+                object = array[0];
                 return {
                     target: key,
-                    event: array[0][1],
-                    value: array[0][2],
+                    event: object[1],
+                    value: object[2],
                 };
             }
-        }), function (object) {
+        })), function (object) {
             if (!_.isUndefined(this._cache[object.target])) {
                 if (object.event === 'delete') {
                     delete this._cache[object.target];
@@ -124,6 +130,8 @@ Model.prototype = _.create(Observable.prototype, {
 
             this._bubbling(object);
         }, this);
+
+        return value;
     },
 
     unset: function (query) {
@@ -151,11 +159,11 @@ Model.prototype = _.create(Observable.prototype, {
                 this._data = undefined;
             }
 
-            _.each(_.map(collection, function (array) {
+            _.each(_.map(collection, function (deleted) {
                 return {
-                    target: array[0],
+                    target: deleted[0],
                     event: 'delete',
-                    value: array[2],
+                    value: deleted[2],
                 };
             }), function (object) {
                 delete this._cache[object.target];
@@ -166,18 +174,101 @@ Model.prototype = _.create(Observable.prototype, {
         return value;
     },
 
+    merge: function (query) {
+        var query, dest, srcs, collection;
+        srcs = _.toArray(arguments);
+
+        if (!_.isString(query)) {
+            query = DELIMITER;
+        } else {
+            srcs = srcs.slice(1);
+        }
+
+        query = _normalizeQuery(query);
+        dest = this.get(query);
+
+        collection = [];
+
+        if (!_.isObject(dest)) {
+            dest = this.set(query, _.isArray(_.first(srcs)) ? [] : {});
+        }
+
+        _.each(srcs, function (src) {
+            var parentPaths, destPaths, srcPaths, updatePaths, createPaths, cloneData, mergedData;
+            parentPaths = _getParentPath(query);
+            destPaths = _getChildrenPath(dest, query).concat(parentPaths);
+            srcPaths = _getChildrenPath(src, query).concat(parentPaths);
+
+            updatePaths = _.intersection(destPaths, srcPaths);
+            createPaths = _.difference(srcPaths, destPaths);
+
+            this._temp = _extend(null, this.get());
+            cloneData = _extend(null, this._temp);
+            this._set('_temp', query, src);
+            mergedData = this._temp;
+
+            _collectMerge(cloneData, updatePaths, collection, 'delete');
+            _collectMerge(mergedData, updatePaths, collection, 'create');
+            _collectMerge(mergedData, createPaths, collection, 'create');
+
+            _merge(dest, src);
+
+            _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
+                var deleted, created;
+
+                if (array.length > 1) {
+                    deleted = array[0];
+                    created = array[1];
+
+                    if (!_.isEqual(deleted[2], created[2])) {
+                        return {
+                            event: 'update',
+                            target: deleted[0],
+                            value: created[2],
+                            oldValue: deleted[2],
+                        };
+                    }
+                } else {
+                    created = array[0];
+                    return {
+                        target: key,
+                        event: created[1],
+                        value: created[2],
+                    };
+                }
+            })), function (object) {
+                if (!_.isUndefined(this._cache[object.target])) {
+                    this._cache[object.target] = object.value;
+                }
+
+                this._bubbling(object);
+            }, this);
+        }, this);
+
+        return dest;
+    },
+
     save: function () {
-        this._savedData = _extend(null, this._data);
+        if (!_.isObject(this._data)) {
+            this._savedData = this._data;
+
+        } else {
+            this._savedData = _extend(null, this._data);
+        }
     },
 
     restore: function () {
         if (!_.isUndefined(this._savedData)) {
+            this.clear();
             this.set(this._savedData);
         }
     },
 
     clear: function () {
-        this._data = this._savedData = undefined;
+        this._data = undefined;
+        _.each(_.keys(this._cache), function (key) {
+            delete this._cache[key];
+        }, this);
     },
 
     _get: function (type, query) {
@@ -196,17 +287,9 @@ Model.prototype = _.create(Observable.prototype, {
 
     _set: function (type, query, value, context) {
         var path, validType, parentPath, parent;
-        if (!_.isString(query)) {
-            context = value;
-            value = query;
-            query = DELIMITER;
-        }
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
-
-        validType = type === 'props' ? 'not-function' : 'function-only';
-        _validateEach(value, validType);
 
         if (path.length) {
             parentPath = _.initial(path);
@@ -217,17 +300,9 @@ Model.prototype = _.create(Observable.prototype, {
                 parent = this[type];
             }
 
-            if (type === 'props') {
-                parent[_.last(path)] = value;
-            } else {
-                parent[_.last(path)] = _bind(value, context);
-            }
+            parent[_.last(path)] = value;
         } else {
-            if (type === 'props') {
-                this[type] = value;
-            } else {
-                this[type] = _bind(value, context);
-            }
+            this[type] = value;
         }
 
         return value;
@@ -238,6 +313,12 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     setProp: function (query, prop) {
+        if (!_.isString(query)) {
+            prop = query;
+            query = DELIMITER;
+        }
+
+        _validateEach(prop, 'not-function');
         return this._set('props', query, prop);
     },
 
@@ -246,6 +327,14 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     setMethod: function (query, method, context) {
+        if (!_.isString(query)) {
+            context = method;
+            method = query;
+            query = DELIMITER;
+        }
+
+        _validateEach(method, 'function-only');
+        method = _bind(method, context);
         return this._set('methods', query, method, context);
     },
 
@@ -301,7 +390,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 });
 
-function _collect(object, query, collection, event) {
+function _collect(/*data, paths, collection, event*/object, query, collection, event) {
     collection = collection || [];
 
     if (event === 'create') {
@@ -310,12 +399,55 @@ function _collect(object, query, collection, event) {
 
     if (_.isObject(object)) {
         _.each(object, function (value, key) {
-            var path = (query !== DELIMITER ? query + '/' : '') + key;
+            var path = (query !== DELIMITER ? query + DELIMITER : '') + key;
             _collect(value, path, collection, event);
         });
     }
 
     collection.push([query, event, object]);
+    /*collection = collection || [];
+
+    _.each(paths, function (path) {
+        var list, value;
+        list = _parseQuery(path);
+
+        if (list.length) {
+            value = _.property(list)(data);
+
+        } else {
+            value = data;
+        }
+
+        if (event === 'create') {
+            _validate(value, 'json');
+        }
+
+        collection.push([path, event, value]);
+    });*/
+
+    return collection;
+}
+
+function _collectMerge(data, paths, collection, event) {
+    collection = collection || [];
+
+    _.each(paths, function (path) {
+        var list, value;
+        list = _parseQuery(path);
+
+        if (list.length) {
+            value = _.property(list)(data);
+
+        } else {
+            value = data;
+        }
+
+        if (event === 'create') {
+            _validate(value, 'json');
+        }
+
+        collection.push([path, event, value]);
+    });
 
     return collection;
 }
@@ -332,16 +464,54 @@ function _bind(object, context) {
     return object;
 }
 
+function _getChildrenPath(object, currentPath, collection) {
+    currentPath = !_.isUndefined(currentPath) ? currentPath : DELIMITER;
+    collection = !_.isUndefined(collection) ? collection : [];
+
+    if (_.isObject(object)) {
+        _.each(object, function (value, key) {
+            var path = currentPath !== DELIMITER ? currentPath + DELIMITER + key : key;
+            _getChildrenPath(value, path, collection);
+        });
+    }
+
+    collection.push(currentPath);
+    return collection;
+}
+
+function _getParentPath(query, collection) {
+    var path = _parseQuery(query);
+    collection = !_.isUndefined(collection) ? collection : [];
+
+    if (path.length) {
+        path.pop();
+        path.reverse().push(DELIMITER);
+    }
+
+    Array.prototype.push.apply(collection, path);
+    return collection;
+}
+
 function _extend(dest, src) {
     dest = dest || (_.isArray(src) ? [] : {});
 
     _.each(src, function (value, key) {
         if (_.isArray(value) || _isPlainObject(value)) {
-            dest[key] = _extend(null, value);
+            dest[key] = _extend(dest[key], value);
 
         } else {
             dest[key] = value;
         }
+    });
+
+    return dest;
+}
+
+function _merge(dest) {
+    var srcs = _.toArray(arguments).slice(1);
+
+    _.each(srcs, function (src) {
+        dest = _extend(dest, src);
     });
 
     return dest;
@@ -399,7 +569,10 @@ function _validate(value, required) {
 }
 
 function _normalizeQuery(query) {
-    if (!_.isString(query)) {
+    if (_.isUndefined(query)) {
+        query = DELIMITER;
+
+    } else if (!_.isString(query)) {
         logger.error('クエリは文字列で指定してください。');
     }
 
