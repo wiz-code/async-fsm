@@ -56,6 +56,20 @@ var mixin = {
             }
         },
 
+        mergeProp: function (query, object) {
+            return this.model.mergeProp(query, object);
+        },
+
+        mergeMethod: function (query, object, context) {
+            if (!_.isString(query)) {
+                object = !_.isUndefined(object) ? object : this;
+                return this.model.mergeMethod(query, object);
+            } else {
+                context = !_.isUndefined(context) ? context : this;
+                return this.model.mergeMethod(query, object, context);
+            }
+        },
+
         watch: function (query, listener) {
             this.model.watch(query, listener);
         },
