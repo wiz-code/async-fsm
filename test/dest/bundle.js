@@ -31912,7 +31912,7 @@ module.exports = Entity;
 
 },{"./logger":205,"./mixin":207,"./model":208,"./subject":213,"./util":215,"underscore":192,"uuid/v4":199}],204:[function(require,module,exports){
 /* Async-FSM.js
- * version 0.5.71
+ * version 0.5.8
  *
  * Copyright (c) 2018 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -32533,6 +32533,20 @@ var mixin = {
             }
         },
 
+        mergeProp: function (query, object) {
+            return this.model.mergeProp(query, object);
+        },
+
+        mergeMethod: function (query, object, context) {
+            if (!_.isString(query)) {
+                object = !_.isUndefined(object) ? object : this;
+                return this.model.mergeMethod(query, object);
+            } else {
+                context = !_.isUndefined(context) ? context : this;
+                return this.model.mergeMethod(query, object, context);
+            }
+        },
+
         watch: function (query, listener) {
             this.model.watch(query, listener);
         },
@@ -32895,6 +32909,7 @@ Model.prototype = _.create(Observable.prototype, {
 
     set: function (query, value) {
         var collection, parentPaths, destPaths, srcPaths, deletePaths, updatePaths, createPaths, path, oldValue, beforeSet, afterSet, parentPath, parent;
+
         if (_.isUndefined(value)) {
             value = query;
             query = DELIMITER;
@@ -32958,6 +32973,7 @@ Model.prototype = _.create(Observable.prototype, {
 
         _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
             var deleted, created, object;
+
             if (array.length > 1) {
                 deleted = array[0];
                 created = array[1];
@@ -33024,7 +33040,7 @@ Model.prototype = _.create(Observable.prototype, {
 
                 delete parent[_.last(path)];
             } else {
-                this._data = undefined;
+                delete this._data;
             }
 
             _.each(_.map(collection, function (object) {
@@ -33061,10 +33077,6 @@ Model.prototype = _.create(Observable.prototype, {
         dest = this.get(query);
 
         collection = [];
-
-        if (!_.isObject(dest)) {
-            dest = this.set(query, _.isArray(_.first(srcs)) ? [] : {});
-        }
 
         _.each(srcs, function (src) {
             var parentPaths, destPaths, srcPaths, updatePaths, createPaths, beforeMerge, afterMerge;
@@ -33192,9 +33204,7 @@ Model.prototype = _.create(Observable.prototype, {
 
         oldValue = this._get(type, query);
 
-        if (_isPrimitive(oldValue) || _isPrimitive(value)) {
-            dest = value;
-        } else if (_.isFunction(value)) {
+        if (_isPrimitive(oldValue) || _isPrimitive(value) || _.isFunction(value)) {
             dest = value;
         } else {
             dest = _merge(oldValue, value);

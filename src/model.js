@@ -65,6 +65,7 @@ Model.prototype = _.create(Observable.prototype, {
 
     set: function (query, value) {
         var collection, parentPaths, destPaths, srcPaths, deletePaths, updatePaths, createPaths, path, oldValue, beforeSet, afterSet, parentPath, parent;
+
         if (_.isUndefined(value)) {
             value = query;
             query = DELIMITER;
@@ -128,6 +129,7 @@ Model.prototype = _.create(Observable.prototype, {
 
         _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
             var deleted, created, object;
+
             if (array.length > 1) {
                 deleted = array[0];
                 created = array[1];
@@ -194,7 +196,7 @@ Model.prototype = _.create(Observable.prototype, {
 
                 delete parent[_.last(path)];
             } else {
-                this._data = undefined;
+                delete this._data;
             }
 
             _.each(_.map(collection, function (object) {
@@ -231,10 +233,6 @@ Model.prototype = _.create(Observable.prototype, {
         dest = this.get(query);
 
         collection = [];
-
-        if (!_.isObject(dest)) {
-            dest = this.set(query, _.isArray(_.first(srcs)) ? [] : {});
-        }
 
         _.each(srcs, function (src) {
             var parentPaths, destPaths, srcPaths, updatePaths, createPaths, beforeMerge, afterMerge;
@@ -362,9 +360,7 @@ Model.prototype = _.create(Observable.prototype, {
 
         oldValue = this._get(type, query);
 
-        if (_isPrimitive(oldValue) || _isPrimitive(value)) {
-            dest = value;
-        } else if (_.isFunction(value)) {
+        if (_isPrimitive(oldValue) || _isPrimitive(value) || _.isFunction(value)) {
             dest = value;
         } else {
             dest = _merge(oldValue, value);
