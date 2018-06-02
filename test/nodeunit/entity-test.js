@@ -33,10 +33,10 @@ module.exports = {
         entity.set([
             {name: 'wiz-code', score: 0},
         ]);
+
         test.ok(entity.has('/0/name'));
         var listener = function (e) {
             test.equal(e.value, 10000);
-
         };
         entity.watch('/0/score/', listener);
         entity.set('0/score', 10000);

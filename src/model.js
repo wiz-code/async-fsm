@@ -24,7 +24,7 @@ getPrototypeOf = Object.getPrototypeOf;
 Model = function (data) {
     Observable.call(this);
 
-    this._data = this._savedData = this.props = this.methods = undefined;
+    this._data = this._savedData = this.props = this.methods = this._temp = undefined;
     this._cache = {};
 
     if (!_.isUndefined(data)) {
@@ -64,25 +64,53 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     set: function (query, value) {
-        var collection, path, oldValue, parentPath, parent;
+        var collection, parentPaths, destPaths, srcPaths, deletePaths, updatePaths, createPaths, path, oldValue, beforeSet, afterSet, parentPath, parent;
         if (_.isUndefined(value)) {
             value = query;
             query = DELIMITER;
         }
 
         collection = [];
+        parentPaths = _getParentPath(query);
+        destPaths = [];
+        srcPaths = [];
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
         oldValue = this.get(query);
+
         if (!_.isUndefined(oldValue)) {
             if (_.isEqual(oldValue, value)) {
                 return value;
             }
-            _collect(oldValue, query, collection, 'delete');
+
+            _getChildrenPath(oldValue, query, destPaths);
         }
 
-        _collect(value, query, collection, 'create');
+        _getChildrenPath(value, query, srcPaths);
+
+        deletePaths = _.difference(destPaths, srcPaths);
+        updatePaths = _.intersection(destPaths, srcPaths).concat(parentPaths);
+        createPaths = _.difference(srcPaths, destPaths);
+
+        beforeSet = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
+
+        if (_isPrimitive(this._data)) {
+            beforeSet = this._data;
+            afterSet = _isPrimitive(value) ? value : _extend(undefined, value);
+        } else {
+            beforeSet = _extend(undefined, this._data);
+            this._temp = _extend(undefined, this._data);
+            this._set('_temp', query, value);
+            afterSet = this._temp;
+        }
+
+        _collect(beforeSet, deletePaths, collection, 'delete');
+        _collect(beforeSet, updatePaths, collection, 'update');
+        _collect(afterSet, updatePaths, collection, 'update');
+        _collect(afterSet, createPaths, collection, 'create');
+
+        delete this._temp;
 
         if (path.length) {
             parentPath = _.initial(path);
@@ -135,15 +163,25 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     unset: function (query) {
-        var collection, path, value, parentPath, parent;
-        collection = [];
+        var path, value, collection, deletePaths, updatePaths, parentPath, parent;
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
         value = this.get(query);
 
+        collection = [];
+        deletePaths = [];
+        updatePaths = _getParentPath(query);
+
         if (!_.isUndefined(value)) {
-            _collect(value, query, collection, 'delete');
+            _getChildrenPath(value, query, deletePaths);
+
+            this._temp = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
+
+            _collect(this._temp, deletePaths, collection, 'delete');
+            _collect(this._temp, updatePaths, collection, 'update');
+
+            delete this._temp;
 
             if (path.length) {
                 parentPath = _.initial(path);
@@ -159,14 +197,19 @@ Model.prototype = _.create(Observable.prototype, {
                 this._data = undefined;
             }
 
-            _.each(_.map(collection, function (deleted) {
+            _.each(_.map(collection, function (object) {
                 return {
-                    target: deleted[0],
-                    event: 'delete',
-                    value: deleted[2],
+                    target: object[0],
+                    event: object[1],
+                    value: object[2],
                 };
             }), function (object) {
-                delete this._cache[object.target];
+                if (!_.isUndefined(this._cache[object.target])) {
+                    if (object.event === 'delete') {
+                        delete this._cache[object.target];
+                    }
+                }
+
                 this._bubbling(object);
             }, this);
         }
@@ -175,7 +218,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     merge: function (query) {
-        var query, dest, srcs, collection;
+        var dest, srcs, collection;
         srcs = _.toArray(arguments);
 
         if (!_.isString(query)) {
@@ -194,7 +237,7 @@ Model.prototype = _.create(Observable.prototype, {
         }
 
         _.each(srcs, function (src) {
-            var parentPaths, destPaths, srcPaths, updatePaths, createPaths, cloneData, mergedData;
+            var parentPaths, destPaths, srcPaths, updatePaths, createPaths, beforeMerge, afterMerge;
             parentPaths = _getParentPath(query);
             destPaths = _getChildrenPath(dest, query).concat(parentPaths);
             srcPaths = _getChildrenPath(src, query).concat(parentPaths);
@@ -202,14 +245,21 @@ Model.prototype = _.create(Observable.prototype, {
             updatePaths = _.intersection(destPaths, srcPaths);
             createPaths = _.difference(srcPaths, destPaths);
 
-            this._temp = _extend(null, this.get());
-            cloneData = _extend(null, this._temp);
-            this._set('_temp', query, src);
-            mergedData = this._temp;
+            if (_isPrimitive(this._data)) {
+                beforeMerge = this._data;
+                afterMerge = _isPrimitive(src) ? src : _extend(undefined, src);
+            } else {
+                beforeMerge = _extend(undefined, this._data);
+                this._temp = _extend(undefined, this._data);
+                this._set('_temp', query, src);
+                afterMerge = this._temp;
+            }
 
-            _collectMerge(cloneData, updatePaths, collection, 'delete');
-            _collectMerge(mergedData, updatePaths, collection, 'create');
-            _collectMerge(mergedData, createPaths, collection, 'create');
+            _collect(beforeMerge, updatePaths, collection, 'delete');
+            _collect(afterMerge, updatePaths, collection, 'create');
+            _collect(afterMerge, createPaths, collection, 'create');
+
+            delete this._temp;
 
             _merge(dest, src);
 
@@ -249,12 +299,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     save: function () {
-        if (!_.isObject(this._data)) {
-            this._savedData = this._data;
-
-        } else {
-            this._savedData = _extend(null, this._data);
-        }
+        this._savedData = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
     },
 
     restore: function () {
@@ -265,7 +310,8 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     clear: function () {
-        this._data = undefined;
+        delete this._data;
+
         _.each(_.keys(this._cache), function (key) {
             delete this._cache[key];
         }, this);
@@ -285,8 +331,8 @@ Model.prototype = _.create(Observable.prototype, {
         return value;
     },
 
-    _set: function (type, query, value, context) {
-        var path, validType, parentPath, parent;
+    _set: function (type, query, value) {
+        var path, parentPath, parent;
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
@@ -308,12 +354,33 @@ Model.prototype = _.create(Observable.prototype, {
         return value;
     },
 
+    _merge: function (type, query, value) {
+        var path, oldValue, dest;
+
+        query = _normalizeQuery(query);
+        path = _parseQuery(query);
+
+        oldValue = this._get(type, query);
+
+        if (_isPrimitive(oldValue) || _isPrimitive(value)) {
+            dest = value;
+        } else if (_.isFunction(value)) {
+            dest = value;
+        } else {
+            dest = _merge(oldValue, value);
+        }
+
+        this._set(type, query, dest);
+
+        return dest;
+    },
+
     getProp: function (query) {
         return this._get('props', query);
     },
 
     setProp: function (query, prop) {
-        if (!_.isString(query)) {
+        if (_.isUndefined(prop)) {
             prop = query;
             query = DELIMITER;
         }
@@ -335,7 +402,29 @@ Model.prototype = _.create(Observable.prototype, {
 
         _validateEach(method, 'function-only');
         method = _bind(method, context);
-        return this._set('methods', query, method, context);
+        return this._set('methods', query, method);
+    },
+
+    mergeProp: function (query, prop) {
+        if (_.isUndefined(prop)) {
+            prop = query;
+            query = DELIMITER;
+        }
+
+        _validateEach(prop, 'not-function');
+        return this._merge('props', query, prop);
+    },
+
+    mergeMethod: function (query, method, context) {
+        if (!_.isString(query)) {
+            context = method;
+            method = query;
+            query = DELIMITER;
+        }
+
+        _validateEach(method, 'function-only');
+        method = _bind(method, context);
+        return this._merge('methods', query, method, context);
     },
 
     _test: function (method) {
@@ -390,45 +479,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 });
 
-function _collect(/*data, paths, collection, event*/object, query, collection, event) {
-    collection = collection || [];
-
-    if (event === 'create') {
-        _validate(object, 'json');
-    }
-
-    if (_.isObject(object)) {
-        _.each(object, function (value, key) {
-            var path = (query !== DELIMITER ? query + DELIMITER : '') + key;
-            _collect(value, path, collection, event);
-        });
-    }
-
-    collection.push([query, event, object]);
-    /*collection = collection || [];
-
-    _.each(paths, function (path) {
-        var list, value;
-        list = _parseQuery(path);
-
-        if (list.length) {
-            value = _.property(list)(data);
-
-        } else {
-            value = data;
-        }
-
-        if (event === 'create') {
-            _validate(value, 'json');
-        }
-
-        collection.push([path, event, value]);
-    });*/
-
-    return collection;
-}
-
-function _collectMerge(data, paths, collection, event) {
+function _collect(data, paths, collection, event) {
     collection = collection || [];
 
     _.each(paths, function (path) {
@@ -484,11 +535,16 @@ function _getParentPath(query, collection) {
     collection = !_.isUndefined(collection) ? collection : [];
 
     if (path.length) {
-        path.pop();
-        path.reverse().push(DELIMITER);
+        path = _.initial(path);
+
+        while (path.length) {
+            collection.push(path.join(DELIMITER));
+            path.pop();
+        }
+
+        collection.push(DELIMITER);
     }
 
-    Array.prototype.push.apply(collection, path);
     return collection;
 }
 
@@ -515,6 +571,10 @@ function _merge(dest) {
     });
 
     return dest;
+}
+
+function _isPrimitive(value) {
+    return _.isUndefined(value) || _.isNull(value) || _.isString(value) || _.isNumber(value) || _.isBoolean(value);
 }
 
 function _validateEach(value, required) {
@@ -584,6 +644,8 @@ function _normalizeQuery(query) {
 }
 
 function _parseQuery(query) {
+    query = !_.isString(query) ? '' + query : query;
+
     if (query !== DELIMITER) {
         return query.split(DELIMITER);
     } else {

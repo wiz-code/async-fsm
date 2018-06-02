@@ -14,7 +14,7 @@
 ### ブラウザで使う場合（Browser）
 #### 依存ファイルをCDN経由で取得
 ```html
-<script src="https://cdn.rawgit.com/wiz-code/async-fsm/0fe96be9/dist/async-fsm.min.js"></script>
+<script src=""></script>
 <script>
 var FSM = require('async-fsm');
 ....
@@ -392,13 +392,14 @@ subMachine.deploy();
 ```
 
 ### データストアの取得・設定
-Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式でまとめてデータを指定することができます。また、get/set()メソッドで値を取得/指定するとき、オブジェクトの階層をスラッシュで区切った"user/id/wiz-code"のようなクエリを使用することができます。さらにwatch()メソッドを使えば、任意のデータが変更されたタイミングで登録されたコールバックを実行できます。一方、PropsはユーザーIDのように基本的にデータが変更されないものを格納します。こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録し、methodsオプションに指定します。なお、インスタンス作成後にPropsとMethodsを追加する場合は、それぞれsetProp()とsetMethod()を通じて追加します。
+Machine/State/Transition/Regionクラスはインスタンスごとにデータストアを持っています。データは**Model**/**Props**/**Methods**に区分され、Modelは主にデータの値が変更されるタイプを格納し、<i>get()</i>・<i>set()</i>メソッドでデータを取得・設定します。また、インスタンス作成時のオプションのdataプロパティにkey/value形式でまとめてデータを指定することができます。また、get/set()メソッドで値を取得/指定するとき、オブジェクトの階層をスラッシュで区切った"user/id/wiz-code"のようなクエリを使用することができます。さらにwatch()メソッドを使えば、任意のデータが変更されたタイミングで登録されたコールバックを実行できます。一方、PropsはユーザーIDのように基本的にデータが変更されないものを格納します。こちらはpropsオプションにまとめて指定します。Methodsはコールバック関数内で何度も使用されるようなメソッドを登録し、methodsオプションに指定します。なお、インスタンス作成後にPropsとMethodsを追加する場合は、それぞれsetProp()とsetMethod()などを通じて追加します。
 
 #### Machine/State/Transition/Regionクラスのデータ操作
  * has ( String $query )
  * get( String $query )
  * set( String $query, Mixed $value ) または set( Object $object ) /* required JSON data type */
  * unset( String $query )
+ * merge( String $query, Mixed $value ) または merge( Object $object ) /* required JSON data type */
  * save()
  * restore()
  * clear()
@@ -408,6 +409,8 @@ Machine/State/Transition/Regionクラスはインスタンスごとにデータ�
  * getMethod( String $query )
  * setProp( String $query, Mixed $value )
  * setMethod( String $query, Mixed $value [, Elem $context ] )
+ * mergeProp( String $query, Mixed $value )
+ * mergeMethod( String $query, Mixed $value [, Elem $context ] )
 
 #### State/Transitionクラスの上位の状態に対するデータ操作
  * $has( String $query )
