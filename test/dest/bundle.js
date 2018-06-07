@@ -31912,7 +31912,7 @@ module.exports = Entity;
 
 },{"./logger":205,"./mixin":207,"./model":208,"./subject":213,"./util":215,"underscore":192,"uuid/v4":199}],204:[function(require,module,exports){
 /* Async-FSM.js
- * version 0.5.8
+ * version 0.5.82
  *
  * Copyright (c) 2018 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license
@@ -32908,7 +32908,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     set: function (query, value) {
-        var collection, parentPaths, destPaths, srcPaths, deletePaths, updatePaths, createPaths, path, oldValue, beforeSet, afterSet, parentPath, parent;
+        var collection, parentPaths, destPaths, srcPaths, deletePaths, updatePaths, createPaths, path, oldValue, preData, postData, parentPath, parent;
 
         if (_.isUndefined(value)) {
             value = query;
@@ -32938,24 +32938,16 @@ Model.prototype = _.create(Observable.prototype, {
         updatePaths = _.intersection(destPaths, srcPaths).concat(parentPaths);
         createPaths = _.difference(srcPaths, destPaths);
 
-        beforeSet = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
-
-        if (_isPrimitive(this._data)) {
-            beforeSet = this._data;
-            afterSet = _isPrimitive(value) ? value : _extend(undefined, value);
-        } else {
-            beforeSet = _extend(undefined, this._data);
-            this._temp = _extend(undefined, this._data);
-            this._set('_temp', query, value);
-            afterSet = this._temp;
-        }
-
-        _collect(beforeSet, deletePaths, collection, 'delete');
-        _collect(beforeSet, updatePaths, collection, 'update');
-        _collect(afterSet, updatePaths, collection, 'update');
-        _collect(afterSet, createPaths, collection, 'create');
-
+        preData = _extend(undefined, this._data);
+        this._temp = _extend(undefined, this._data);
+        this._set('_temp', query, _extend(undefined, value));
+        postData = this._temp;
         delete this._temp;
+
+        _collect(preData, deletePaths, collection, 'delete');
+        _collect(preData, updatePaths, collection, 'delete');
+        _collect(postData, updatePaths, collection, 'create');
+        _collect(postData, createPaths, collection, 'create');
 
         if (path.length) {
             parentPath = _.initial(path);
@@ -32971,7 +32963,7 @@ Model.prototype = _.create(Observable.prototype, {
             this._data = value;
         }
 
-        _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
+        _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array) {
             var deleted, created, object;
 
             if (array.length > 1) {
@@ -32979,8 +32971,8 @@ Model.prototype = _.create(Observable.prototype, {
                 created = array[1];
                 if (!_.isEqual(deleted[2], created[2])) {
                     return {
-                        event: 'update',
                         target: deleted[0],
+                        event: 'update',
                         value: created[2],
                         oldValue: deleted[2],
                     };
@@ -32988,7 +32980,7 @@ Model.prototype = _.create(Observable.prototype, {
             } else {
                 object = array[0];
                 return {
-                    target: key,
+                    target: object[0],
                     event: object[1],
                     value: object[2],
                 };
@@ -33009,7 +33001,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     unset: function (query) {
-        var path, value, collection, deletePaths, updatePaths, parentPath, parent;
+        var path, value, collection, deletePaths, updatePaths, preData, postData, parentPath, parent;
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
@@ -33022,12 +33014,15 @@ Model.prototype = _.create(Observable.prototype, {
         if (!_.isUndefined(value)) {
             _getChildrenPath(value, query, deletePaths);
 
-            this._temp = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
-
-            _collect(this._temp, deletePaths, collection, 'delete');
-            _collect(this._temp, updatePaths, collection, 'update');
-
+            preData = _extend(undefined, this._data);
+            this._temp = _extend(undefined, this._data);
+            this._unset('_temp', query);
+            postData = this._temp;
             delete this._temp;
+
+            _collect(preData, deletePaths, collection, 'delete');
+            _collect(preData, updatePaths, collection, 'delete');
+            _collect(postData, updatePaths, collection, 'create');
 
             if (path.length) {
                 parentPath = _.initial(path);
@@ -33043,16 +33038,33 @@ Model.prototype = _.create(Observable.prototype, {
                 delete this._data;
             }
 
-            _.each(_.map(collection, function (object) {
-                return {
-                    target: object[0],
-                    event: object[1],
-                    value: object[2],
-                };
-            }), function (object) {
+            _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array) {
+                var deleted, created;
+
+                if (array.length > 1) {
+                    deleted = array[0];
+                    created = array[1];
+
+                    return {
+                        event: 'update',
+                        target: deleted[0],
+                        value: created[2],
+                        oldValue: deleted[2],
+                    };
+                } else {
+                    deleted = array[0];
+                    return {
+                        target: deleted[0],
+                        event: deleted[1],
+                        value: deleted[2],
+                    };
+                }
+            })), function (object) {
                 if (!_.isUndefined(this._cache[object.target])) {
                     if (object.event === 'delete') {
                         delete this._cache[object.target];
+                    } else {
+                        this._cache[object.target] = object.value;
                     }
                 }
 
@@ -33070,7 +33082,12 @@ Model.prototype = _.create(Observable.prototype, {
         if (!_.isString(query)) {
             query = DELIMITER;
         } else {
-            srcs = srcs.slice(1);
+            if (srcs.length > 1) {
+                srcs = srcs.slice(1);
+            } else {
+                query = DELIMITER;
+                srcs = srcs[0];
+            }
         }
 
         query = _normalizeQuery(query);
@@ -33079,31 +33096,31 @@ Model.prototype = _.create(Observable.prototype, {
         collection = [];
 
         _.each(srcs, function (src) {
-            var parentPaths, destPaths, srcPaths, updatePaths, createPaths, beforeMerge, afterMerge;
+            var parentPaths, destPaths, srcPaths, updatePaths, createPaths, preData, postData;
+
+            if (!_.isObject(src)) {
+                logger.error('マージ元は配列か連想配列を指定してください。');
+            }
+
             parentPaths = _getParentPath(query);
             destPaths = _getChildrenPath(dest, query).concat(parentPaths);
-            srcPaths = _getChildrenPath(src, query).concat(parentPaths);
+            srcPaths = _getMergedChildrenPath(dest, src, query).concat(parentPaths);
 
             updatePaths = _.intersection(destPaths, srcPaths);
             createPaths = _.difference(srcPaths, destPaths);
 
-            if (_isPrimitive(this._data)) {
-                beforeMerge = this._data;
-                afterMerge = _isPrimitive(src) ? src : _extend(undefined, src);
-            } else {
-                beforeMerge = _extend(undefined, this._data);
-                this._temp = _extend(undefined, this._data);
-                this._set('_temp', query, src);
-                afterMerge = this._temp;
-            }
-
-            _collect(beforeMerge, updatePaths, collection, 'delete');
-            _collect(afterMerge, updatePaths, collection, 'create');
-            _collect(afterMerge, createPaths, collection, 'create');
-
+            preData = _extend(undefined, this._data);
+            this._temp = _extend(undefined, this._data);
+            this._merge('_temp', query, _extend(undefined, src));
+            postData = this._temp;
             delete this._temp;
 
-            _merge(dest, src);
+            _collect(preData, updatePaths, collection, 'delete');
+            _collect(postData, updatePaths, collection, 'create');
+            _collect(postData, createPaths, collection, 'create');
+
+            dest = _merge(dest, src);
+            //_merge(dest, src);
 
             _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
                 var deleted, created;
@@ -33141,7 +33158,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     save: function () {
-        this._savedData = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
+        this._savedData = _extend(undefined, this._data);
     },
 
     restore: function () {
@@ -33196,20 +33213,38 @@ Model.prototype = _.create(Observable.prototype, {
         return value;
     },
 
+    _unset: function (type, query) {
+        var path, value, parentPath, parent;
+
+        query = _normalizeQuery(query);
+        path = _parseQuery(query);
+        value = this._get(type, query);
+
+        if (path.length) {
+            parentPath = _.initial(path);
+
+            if (parentPath.length) {
+                parent = _.property(parentPath)(this[type]);
+            } else {
+                parent = this[type];
+            }
+
+            delete parent[_.last(path)];
+        } else {
+            delete this[type];
+        }
+
+        return value;
+    },
+
     _merge: function (type, query, value) {
         var path, oldValue, dest;
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
-
         oldValue = this._get(type, query);
 
-        if (_isPrimitive(oldValue) || _isPrimitive(value) || _.isFunction(value)) {
-            dest = value;
-        } else {
-            dest = _merge(oldValue, value);
-        }
-
+        dest = _merge(oldValue, value);
         this._set(type, query, dest);
 
         return dest;
@@ -33355,6 +33390,34 @@ function _bind(object, context) {
     return object;
 }
 
+function _getMergedChildrenPath(dest, src, currentPath, collection) {
+    var destLength;
+    currentPath = !_.isUndefined(currentPath) ? currentPath : DELIMITER;
+    collection = !_.isUndefined(collection) ? collection : [];
+
+    if (_.isArray(src)) {
+        destLength = _.isArray(dest) ? dest.length : 0;
+
+        _.each(src, function (element, index) {
+            var currentIndex, path;
+            currentIndex = '' + (destLength + index);
+            path = currentPath !== DELIMITER ? currentPath + DELIMITER + currentIndex : currentIndex;
+
+            _getMergedChildrenPath(undefined, element, path, collection);
+        });
+    } else if (_isPlainObject(src)) {
+        _.each(src, function (value, key) {
+            var path, destChild;
+            path = currentPath !== DELIMITER ? currentPath + DELIMITER + key : key;
+            destChild = _isPlainObject(dest) ? dest[key] : undefined;
+            _getMergedChildrenPath(destChild, value, path, collection);
+        });
+    }
+
+    collection.push(currentPath);
+    return collection;
+}
+
 function _getChildrenPath(object, currentPath, collection) {
     currentPath = !_.isUndefined(currentPath) ? currentPath : DELIMITER;
     collection = !_.isUndefined(collection) ? collection : [];
@@ -33389,16 +33452,26 @@ function _getParentPath(query, collection) {
 }
 
 function _extend(dest, src) {
-    dest = dest || (_.isArray(src) ? [] : {});
+    var i, l, keys, key, value;
+    if (_.isArray(src)) {
+        dest = dest || [];
 
-    _.each(src, function (value, key) {
-        if (_.isArray(value) || _isPlainObject(value)) {
-            dest[key] = _extend(dest[key], value);
+        for (i = 0, l = src.length; i < l; i += 1) {
+            value = !_.isObject(src[i]) ? src[i] : _extend(undefined, src[i]);
+            dest.push(value);
+        }
+    } else if (_isPlainObject(src)) {
+        dest = dest || {};
+        keys = _.keys(src);
 
-        } else {
+        for (i = 0, l = keys.length; i < l; i += 1) {
+            key = keys[i];
+            value = !_.isObject(src[key]) ? src[key] : _extend(dest[key], src[key]);
             dest[key] = value;
         }
-    });
+    } else {
+        dest = src;
+    }
 
     return dest;
 }
@@ -33411,10 +33484,6 @@ function _merge(dest) {
     });
 
     return dest;
-}
-
-function _isPrimitive(value) {
-    return _.isUndefined(value) || _.isNull(value) || _.isString(value) || _.isNumber(value) || _.isBoolean(value);
 }
 
 function _validateEach(value, required) {
@@ -35197,17 +35266,22 @@ FSM.logger.setLogLevel('error');
 var toString = Object.prototype.toString;
 var getPrototypeOf = Object.getPrototypeOf;
 function _extend(dest, src) {
-    if (!_.isObject(src)) {
-        return src;
-    }
-    dest = dest || (_.isArray(src) ? [] : {});
-    _.each(src, function (value, key) {
-        if (_.isArray(value) || _isPlainObject(value)) {
-            dest[key] = _extend(dest[key], value);
-        } else {
+    var i, l, keys, key, value;
+    if (_.isArray(src)) {
+        dest = _.isArray(dest) ? dest : [];
+        for (i = 0, l = src.length; i < l; i += 1) {
+            value = !_.isObject(src[i]) ? src[i] : _extend(undefined, src[i]);
+            dest.push(value);
+        }
+    } else {
+        dest = _isPlainObject(dest) ? dest : {};
+        keys = _.keys(src);
+        for (i = 0, l = keys.length; i < l; i += 1) {
+            key = keys[i];
+            value = !_.isObject(src[key]) ? src[key] : _extend(dest[key], src[key]);
             dest[key] = value;
         }
-    });
+    }
     return dest;
 }
 function _merge(dest) {
@@ -35267,54 +35341,54 @@ describe('Model', function () {
                 assert.equal(_rec17._expr(_rec17._capt(_rec17._capt(e, 'arguments/0/object').currentTarget, 'arguments/0'), {
                     content: 'assert.equal(e.currentTarget, \'e/0\')',
                     filepath: 'test/dest/bundle.js',
-                    line: 224
+                    line: 228
                 }), 'e/0');
                 if (e.target === 'e/0/f') {
                     assert.equal(_rec18._expr(_rec18._capt(_rec18._capt(e, 'arguments/0/object').event, 'arguments/0'), {
                         content: 'assert.equal(e.event, \'delete\')',
                         filepath: 'test/dest/bundle.js',
-                        line: 226
+                        line: 230
                     }), 'delete');
                     assert.equal(_rec19._expr(_rec19._capt(_rec19._capt(e, 'arguments/0/object').value, 'arguments/0'), {
                         content: 'assert.equal(e.value, \'fuga\')',
                         filepath: 'test/dest/bundle.js',
-                        line: 227
+                        line: 231
                     }), 'fuga');
                 }
                 if (e.target === 'e/0/g') {
                     assert.equal(_rec20._expr(_rec20._capt(_rec20._capt(e, 'arguments/0/object').event, 'arguments/0'), {
                         content: 'assert.equal(e.event, \'delete\')',
                         filepath: 'test/dest/bundle.js',
-                        line: 231
+                        line: 235
                     }), 'delete');
                     assert.equal(_rec21._expr(_rec21._capt(_rec21._capt(e, 'arguments/0/object').value, 'arguments/0'), {
                         content: 'assert.equal(e.value, 100)',
                         filepath: 'test/dest/bundle.js',
-                        line: 232
+                        line: 236
                     }), 100);
                 }
                 if (e.target === 'e/0/h') {
                     assert.equal(_rec22._expr(_rec22._capt(_rec22._capt(e, 'arguments/0/object').event, 'arguments/0'), {
                         content: 'assert.equal(e.event, \'create\')',
                         filepath: 'test/dest/bundle.js',
-                        line: 236
+                        line: 240
                     }), 'create');
                     assert.equal(_rec23._expr(_rec23._capt(_rec23._capt(e, 'arguments/0/object').value, 'arguments/0'), {
                         content: 'assert.equal(e.value, \'new fuga\')',
                         filepath: 'test/dest/bundle.js',
-                        line: 237
+                        line: 241
                     }), 'new fuga');
                 }
                 if (e.target === 'e/0/i') {
                     assert.equal(_rec24._expr(_rec24._capt(_rec24._capt(e, 'arguments/0/object').event, 'arguments/0'), {
                         content: 'assert.equal(e.event, \'create\')',
                         filepath: 'test/dest/bundle.js',
-                        line: 241
+                        line: 245
                     }), 'create');
                     assert.equal(_rec25._expr(_rec25._capt(_rec25._capt(e, 'arguments/0/object').value, 'arguments/0'), {
                         content: 'assert.equal(e.value, 11111)',
                         filepath: 'test/dest/bundle.js',
-                        line: 242
+                        line: 246
                     }), 11111);
                 }
             };
@@ -35328,8 +35402,8 @@ describe('Model', function () {
         before(function () {
         });
         it('should merge model data with other objects', function (done) {
-            var _rec28 = new _PowerAssertRecorder1();
-            var _rec31 = new _PowerAssertRecorder1();
+            var _rec27 = new _PowerAssertRecorder1();
+            var _rec30 = new _PowerAssertRecorder1();
             var model = new Model();
             var data = {
                 a: {
@@ -35347,6 +35421,7 @@ describe('Model', function () {
                     'bar'
                 ]
             };
+            var cloneData = _extend(undefined, data);
             var start = performance.now();
             model.set(data);
             var duration = performance.now() - start;
@@ -35383,190 +35458,60 @@ describe('Model', function () {
                 },
                 {
                     i: [{
-                            j: {
-                                k: [
+                            l: {
+                                m: [
                                     4,
                                     5,
                                     6
                                 ]
                             },
-                            l: 'new element'
+                            n: 'new element'
                         }]
                 }
             ];
-            var first = function (e) {
+            var callback = function (e) {
                 var _rec26 = new _PowerAssertRecorder1();
                 assert.equal(_rec26._expr(_rec26._capt(_rec26._capt(e, 'arguments/0/object').value, 'arguments/0'), {
                     content: 'assert.equal(e.value, 1)',
                     filepath: 'test/dest/bundle.js',
-                    line: 319
+                    line: 324
                 }), 1);
             };
-            var second = function (e) {
-                var _rec27 = new _PowerAssertRecorder1();
-                assert.equal(_rec27._expr(_rec27._capt(_rec27._capt(e, 'arguments/0/object').value, 'arguments/0'), {
-                    content: 'assert.equal(e.value, 4)',
-                    filepath: 'test/dest/bundle.js',
-                    line: 322
-                }), 4);
-            };
-            model.watch('h/i/0/j/k/0', first);
+            model.watch('h/i/0/j/k/0', callback);
             var start = performance.now();
             model.merge(mergeData[0]);
             var duration = performance.now() - start;
             console.log('#merge() performance', duration, 'ms');
-            model.unwatch('h/i/0/j/k/0', first);
-            model.watch('h/i/0/j/k/0', second);
-            var merged = _merge(data, mergeData[0]);
+            model.unwatch('h/i/0/j/k/0', callback);
+            var merged = _merge(cloneData, mergeData[0]);
             var isEqual = _.isEqual(model.get(), merged);
-            assert.ok(_rec28._expr(_rec28._capt(isEqual, 'arguments/0'), {
+            assert.ok(_rec27._expr(_rec27._capt(isEqual, 'arguments/0'), {
                 content: 'assert.ok(isEqual)',
                 filepath: 'test/dest/bundle.js',
-                line: 337
+                line: 338
             }));
             var callback = function (e) {
+                var _rec28 = new _PowerAssertRecorder1();
                 var _rec29 = new _PowerAssertRecorder1();
-                var _rec30 = new _PowerAssertRecorder1();
-                assert.equal(_rec29._expr(_rec29._capt(_rec29._capt(e, 'arguments/0/object').event, 'arguments/0'), {
+                assert.equal(_rec28._expr(_rec28._capt(_rec28._capt(e, 'arguments/0/object').event, 'arguments/0'), {
                     content: 'assert.equal(e.event, \'create\')',
                     filepath: 'test/dest/bundle.js',
-                    line: 340
+                    line: 341
                 }), 'create');
-                assert.equal(_rec30._expr(_rec30._capt(_rec30._capt(e, 'arguments/0/object').value, 'arguments/0'), {
+                assert.equal(_rec29._expr(_rec29._capt(_rec29._capt(e, 'arguments/0/object').value, 'arguments/0'), {
                     content: 'assert.equal(e.value, \'new element\')',
                     filepath: 'test/dest/bundle.js',
-                    line: 341
+                    line: 342
                 }), 'new element');
             };
-            model.watch('h/i/0/l', callback);
+            model.watch('h/i/1/n', callback);
             model.merge('h', mergeData[1]);
             var isEqual = _.isEqual(model.get(), _merge(merged, { h: mergeData[1] }));
-            assert.ok(_rec31._expr(_rec31._capt(isEqual, 'arguments/0'), {
+            assert.ok(_rec30._expr(_rec30._capt(isEqual, 'arguments/0'), {
                 content: 'assert.ok(isEqual)',
                 filepath: 'test/dest/bundle.js',
-                line: 347
+                line: 348
             }));
-            done();
-        });
-        after(function () {
-        });
-    });
-    describe('#mergeProp()', function () {
-        before(function () {
-        });
-        it('should merge props with other objects', function (done) {
-            var _rec32 = new _PowerAssertRecorder1();
-            var _rec33 = new _PowerAssertRecorder1();
-            var _rec34 = new _PowerAssertRecorder1();
-            var _rec35 = new _PowerAssertRecorder1();
-            var _rec36 = new _PowerAssertRecorder1();
-            var _rec37 = new _PowerAssertRecorder1();
-            var _rec38 = new _PowerAssertRecorder1();
-            var _rec39 = new _PowerAssertRecorder1();
-            var model = new Model();
-            model.mergeProp('value');
-            assert.equal(_rec32._expr(_rec32._capt(_rec32._capt(model, 'arguments/0/object').props, 'arguments/0'), {
-                content: 'assert.equal(model.props, \'value\')',
-                filepath: 'test/dest/bundle.js',
-                line: 366
-            }), 'value');
-            model.mergeProp({
-                prop1: 'value1',
-                prop2: 'value2',
-                prop3: { subProp: 'value3' }
-            });
-            assert.equal(_rec33._expr(_rec33._capt(_rec33._capt(_rec33._capt(model, 'arguments/0/object/object').props, 'arguments/0/object').prop1, 'arguments/0'), {
-                content: 'assert.equal(model.props.prop1, \'value1\')',
-                filepath: 'test/dest/bundle.js',
-                line: 376
-            }), 'value1');
-            assert.equal(_rec34._expr(_rec34._capt(_rec34._capt(_rec34._capt(model, 'arguments/0/object/object').props, 'arguments/0/object').prop2, 'arguments/0'), {
-                content: 'assert.equal(model.props.prop2, \'value2\')',
-                filepath: 'test/dest/bundle.js',
-                line: 377
-            }), 'value2');
-            assert.equal(_rec35._expr(_rec35._capt(_rec35._capt(model, 'arguments/0/callee/object').getProp('prop3/subProp'), 'arguments/0'), {
-                content: 'assert.equal(model.getProp(\'prop3/subProp\'), \'value3\')',
-                filepath: 'test/dest/bundle.js',
-                line: 378
-            }), 'value3');
-            model.mergeProp({
-                prop1: 'new value1',
-                prop2: 'new value2'
-            });
-            assert.equal(_rec36._expr(_rec36._capt(_rec36._capt(_rec36._capt(model, 'arguments/0/object/object').props, 'arguments/0/object').prop1, 'arguments/0'), {
-                content: 'assert.equal(model.props.prop1, \'new value1\')',
-                filepath: 'test/dest/bundle.js',
-                line: 385
-            }), 'new value1');
-            assert.equal(_rec37._expr(_rec37._capt(_rec37._capt(_rec37._capt(model, 'arguments/0/object/object').props, 'arguments/0/object').prop2, 'arguments/0'), {
-                content: 'assert.equal(model.props.prop2, \'new value2\')',
-                filepath: 'test/dest/bundle.js',
-                line: 386
-            }), 'new value2');
-            model.mergeProp('prop3', {
-                subProp: 'new value3',
-                anotherSubProp: 'new value4'
-            });
-            assert.equal(_rec38._expr(_rec38._capt(_rec38._capt(model, 'arguments/0/callee/object').getProp('prop3/subProp'), 'arguments/0'), {
-                content: 'assert.equal(model.getProp(\'prop3/subProp\'), \'new value3\')',
-                filepath: 'test/dest/bundle.js',
-                line: 392
-            }), 'new value3');
-            assert.equal(_rec39._expr(_rec39._capt(_rec39._capt(model, 'arguments/0/callee/object').getProp('prop3/anotherSubProp'), 'arguments/0'), {
-                content: 'assert.equal(model.getProp(\'prop3/anotherSubProp\'), \'new value4\')',
-                filepath: 'test/dest/bundle.js',
-                line: 393
-            }), 'new value4');
-            assert.throws(function () {
-                model.mergeProp({ method: _.noop });
-            });
-            done();
-        });
-        after(function () {
-        });
-    });
-    describe('#mergeMethod()', function () {
-        before(function () {
-        });
-        it('should merge methods with other objects', function (done) {
-            var model = new Model();
-            var func1 = function (arg) {
-                var _rec40 = new _PowerAssertRecorder1();
-                assert.equal(_rec40._expr(_rec40._capt(arg, 'arguments/0'), {
-                    content: 'assert.equal(arg, \'func1\')',
-                    filepath: 'test/dest/bundle.js',
-                    line: 418
-                }), 'func1');
-            };
-            var func2 = function (arg) {
-                var _rec41 = new _PowerAssertRecorder1();
-                assert.equal(_rec41._expr(_rec41._capt(arg, 'arguments/0'), {
-                    content: 'assert.equal(arg, \'func2\')',
-                    filepath: 'test/dest/bundle.js',
-                    line: 421
-                }), 'func2');
-            };
-            var func3 = function (arg) {
-                var _rec42 = new _PowerAssertRecorder1();
-                assert.equal(_rec42._expr(_rec42._capt(arg, 'arguments/0'), {
-                    content: 'assert.equal(arg, \'func3\')',
-                    filepath: 'test/dest/bundle.js',
-                    line: 424
-                }), 'func3');
-            };
-            model.setMethod({
-                hoge: {
-                    func1: func1,
-                    func2: func2
-                }
-            });
-            model.mergeMethod('hoge', { func3: func3 });
-            assert.throws(function () {
-                model.mergeMethod('hoge', 'function');
-            });
-            model.getMethod('hoge/func1', model)('func1');
-            model.getMethod('hoge/func3', model)('func3');
             done();
         });
         after(function () {
@@ -35596,40 +35541,40 @@ describe('Region', function () {
             });
         });
         it('should return state instance', function () {
-            var _rec43 = new _PowerAssertRecorder1();
-            var _rec44 = new _PowerAssertRecorder1();
+            var _rec31 = new _PowerAssertRecorder1();
+            var _rec32 = new _PowerAssertRecorder1();
             result = region.addState(state);
-            assert.equal(_rec43._expr(_rec43._capt(result, 'arguments/0'), {
+            assert.equal(_rec31._expr(_rec31._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 485
-            }), _rec44._expr(_rec44._capt(state, 'arguments/1'), {
+                line: 486
+            }), _rec32._expr(_rec32._capt(state, 'arguments/1'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 485
+                line: 486
             }));
         });
         it('children.states prop of region should have 3 elements', function () {
-            var _rec45 = new _PowerAssertRecorder1();
+            var _rec33 = new _PowerAssertRecorder1();
             region.addState(state);
-            assert.equal(_rec45._expr(_rec45._capt(_rec45._capt(_rec45._capt(_rec45._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').states, 'arguments/0/object').length, 'arguments/0'), {
+            assert.equal(_rec33._expr(_rec33._capt(_rec33._capt(_rec33._capt(_rec33._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').states, 'arguments/0/object').length, 'arguments/0'), {
                 content: 'assert.equal(region.children.states.length, 3)',
                 filepath: 'test/dest/bundle.js',
-                line: 490
+                line: 491
             }), 3);
         });
         it('container prop of state should be region instance', function () {
-            var _rec46 = new _PowerAssertRecorder1();
-            var _rec47 = new _PowerAssertRecorder1();
+            var _rec34 = new _PowerAssertRecorder1();
+            var _rec35 = new _PowerAssertRecorder1();
             region.addState(state);
-            assert.equal(_rec46._expr(_rec46._capt(_rec46._capt(state, 'arguments/0/object').container, 'arguments/0'), {
+            assert.equal(_rec34._expr(_rec34._capt(_rec34._capt(state, 'arguments/0/object').container, 'arguments/0'), {
                 content: 'assert.equal(state.container, region)',
                 filepath: 'test/dest/bundle.js',
-                line: 495
-            }), _rec47._expr(_rec47._capt(region, 'arguments/1'), {
+                line: 496
+            }), _rec35._expr(_rec35._capt(region, 'arguments/1'), {
                 content: 'assert.equal(state.container, region)',
                 filepath: 'test/dest/bundle.js',
-                line: 495
+                line: 496
             }));
         });
     });
@@ -35642,35 +35587,35 @@ describe('Region', function () {
             done();
         });
         it('should return state instance', function () {
-            var _rec48 = new _PowerAssertRecorder1();
-            var _rec49 = new _PowerAssertRecorder1();
+            var _rec36 = new _PowerAssertRecorder1();
+            var _rec37 = new _PowerAssertRecorder1();
             result = region.removeState(state);
-            assert.equal(_rec48._expr(_rec48._capt(result, 'arguments/0'), {
+            assert.equal(_rec36._expr(_rec36._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 512
-            }), _rec49._expr(_rec49._capt(state, 'arguments/1'), {
+                line: 513
+            }), _rec37._expr(_rec37._capt(state, 'arguments/1'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 512
+                line: 513
             }));
         });
         it('children.states prop of region should have 2 elements', function () {
-            var _rec50 = new _PowerAssertRecorder1();
+            var _rec38 = new _PowerAssertRecorder1();
             region.removeState(state);
-            assert.equal(_rec50._expr(_rec50._capt(_rec50._capt(_rec50._capt(_rec50._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').states, 'arguments/0/object').length, 'arguments/0'), {
+            assert.equal(_rec38._expr(_rec38._capt(_rec38._capt(_rec38._capt(_rec38._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').states, 'arguments/0/object').length, 'arguments/0'), {
                 content: 'assert.equal(region.children.states.length, 2)',
                 filepath: 'test/dest/bundle.js',
-                line: 517
+                line: 518
             }), 2);
         });
         it('container prop of state should be null', function () {
-            var _rec51 = new _PowerAssertRecorder1();
+            var _rec39 = new _PowerAssertRecorder1();
             region.removeState(state);
-            assert.equal(_rec51._expr(_rec51._capt(_rec51._capt(state, 'arguments/0/object').container, 'arguments/0'), {
+            assert.equal(_rec39._expr(_rec39._capt(_rec39._capt(state, 'arguments/0/object').container, 'arguments/0'), {
                 content: 'assert.equal(state.container, null)',
                 filepath: 'test/dest/bundle.js',
-                line: 522
+                line: 523
             }), null);
         });
     });
@@ -35695,40 +35640,40 @@ describe('Region', function () {
             });
         });
         it('should return transition instance', function () {
-            var _rec52 = new _PowerAssertRecorder1();
-            var _rec53 = new _PowerAssertRecorder1();
+            var _rec40 = new _PowerAssertRecorder1();
+            var _rec41 = new _PowerAssertRecorder1();
             result = region.addTransition(transit);
-            assert.equal(_rec52._expr(_rec52._capt(result, 'arguments/0'), {
+            assert.equal(_rec40._expr(_rec40._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 552
-            }), _rec53._expr(_rec53._capt(transit, 'arguments/1'), {
+                line: 553
+            }), _rec41._expr(_rec41._capt(transit, 'arguments/1'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 552
+                line: 553
             }));
         });
         it('children.transitions prop of region should have 1 element', function () {
-            var _rec54 = new _PowerAssertRecorder1();
+            var _rec42 = new _PowerAssertRecorder1();
             region.addTransition(transit);
-            assert.equal(_rec54._expr(_rec54._capt(_rec54._capt(_rec54._capt(_rec54._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').transitions, 'arguments/0/object').length, 'arguments/0'), {
+            assert.equal(_rec42._expr(_rec42._capt(_rec42._capt(_rec42._capt(_rec42._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').transitions, 'arguments/0/object').length, 'arguments/0'), {
                 content: 'assert.equal(region.children.transitions.length, 1)',
                 filepath: 'test/dest/bundle.js',
-                line: 557
+                line: 558
             }), 1);
         });
         it('container prop of transition should be region instance', function () {
-            var _rec55 = new _PowerAssertRecorder1();
-            var _rec56 = new _PowerAssertRecorder1();
+            var _rec43 = new _PowerAssertRecorder1();
+            var _rec44 = new _PowerAssertRecorder1();
             region.addTransition(transit);
-            assert.equal(_rec55._expr(_rec55._capt(_rec55._capt(transit, 'arguments/0/object').container, 'arguments/0'), {
+            assert.equal(_rec43._expr(_rec43._capt(_rec43._capt(transit, 'arguments/0/object').container, 'arguments/0'), {
                 content: 'assert.equal(transit.container, region)',
                 filepath: 'test/dest/bundle.js',
-                line: 562
-            }), _rec56._expr(_rec56._capt(region, 'arguments/1'), {
+                line: 563
+            }), _rec44._expr(_rec44._capt(region, 'arguments/1'), {
                 content: 'assert.equal(transit.container, region)',
                 filepath: 'test/dest/bundle.js',
-                line: 562
+                line: 563
             }));
         });
     });
@@ -35744,35 +35689,35 @@ describe('Region', function () {
             done();
         });
         it('should return transition instance', function () {
-            var _rec57 = new _PowerAssertRecorder1();
-            var _rec58 = new _PowerAssertRecorder1();
+            var _rec45 = new _PowerAssertRecorder1();
+            var _rec46 = new _PowerAssertRecorder1();
             result = region.removeTransition(transit);
-            assert.equal(_rec57._expr(_rec57._capt(result, 'arguments/0'), {
+            assert.equal(_rec45._expr(_rec45._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 581
-            }), _rec58._expr(_rec58._capt(transit, 'arguments/1'), {
+                line: 582
+            }), _rec46._expr(_rec46._capt(transit, 'arguments/1'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 581
+                line: 582
             }));
         });
         it('children.transitions prop of region should have no element', function () {
-            var _rec59 = new _PowerAssertRecorder1();
+            var _rec47 = new _PowerAssertRecorder1();
             region.removeTransition(transit);
-            assert.equal(_rec59._expr(_rec59._capt(_rec59._capt(_rec59._capt(_rec59._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').transitions, 'arguments/0/object').length, 'arguments/0'), {
+            assert.equal(_rec47._expr(_rec47._capt(_rec47._capt(_rec47._capt(_rec47._capt(region, 'arguments/0/object/object/object').children, 'arguments/0/object/object').transitions, 'arguments/0/object').length, 'arguments/0'), {
                 content: 'assert.equal(region.children.transitions.length, 0)',
                 filepath: 'test/dest/bundle.js',
-                line: 586
+                line: 587
             }), 0);
         });
         it('container prop of transition should be null', function () {
-            var _rec60 = new _PowerAssertRecorder1();
+            var _rec48 = new _PowerAssertRecorder1();
             region.removeTransition(transit);
-            assert.equal(_rec60._expr(_rec60._capt(_rec60._capt(transit, 'arguments/0/object').container, 'arguments/0'), {
+            assert.equal(_rec48._expr(_rec48._capt(_rec48._capt(transit, 'arguments/0/object').container, 'arguments/0'), {
                 content: 'assert.equal(transit.container, null)',
                 filepath: 'test/dest/bundle.js',
-                line: 591
+                line: 592
             }), null);
         });
     });
@@ -35785,23 +35730,23 @@ describe('Region', function () {
             done();
         });
         it('should return true when the region have the history state', function () {
-            var _rec61 = new _PowerAssertRecorder1();
+            var _rec49 = new _PowerAssertRecorder1();
             region.addState(history);
             result = region.hasHistory();
-            assert.equal(_rec61._expr(_rec61._capt(result, 'arguments/0'), {
+            assert.equal(_rec49._expr(_rec49._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, true)',
                 filepath: 'test/dest/bundle.js',
-                line: 608
+                line: 609
             }), true);
         });
         it('should return true when the region have the history state that is deep', function () {
-            var _rec62 = new _PowerAssertRecorder1();
+            var _rec50 = new _PowerAssertRecorder1();
             region.addState(deepHistory);
             result = region.hasHistory(true);
-            assert.equal(_rec62._expr(_rec62._capt(result, 'arguments/0'), {
+            assert.equal(_rec50._expr(_rec50._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, true)',
                 filepath: 'test/dest/bundle.js',
-                line: 614
+                line: 615
             }), true);
         });
     });
@@ -35816,27 +35761,27 @@ describe('Region', function () {
             done();
         });
         it('should return 1', function () {
-            var _rec63 = new _PowerAssertRecorder1();
+            var _rec51 = new _PowerAssertRecorder1();
             result = region2.getIndex();
-            assert.equal(_rec63._expr(_rec63._capt(result, 'arguments/0'), {
+            assert.equal(_rec51._expr(_rec51._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, 1)',
                 filepath: 'test/dest/bundle.js',
-                line: 632
+                line: 633
             }), 1);
         });
         it('should return -1 when the region doesn\'t have no parent', function () {
-            var _rec64 = new _PowerAssertRecorder1();
-            var _rec65 = new _PowerAssertRecorder1();
+            var _rec52 = new _PowerAssertRecorder1();
+            var _rec53 = new _PowerAssertRecorder1();
             state.removeRegion(region2);
             result = region2.getIndex();
-            assert.equal(_rec64._expr(_rec64._capt(result, 'arguments/0'), {
+            assert.equal(_rec52._expr(_rec52._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, -1)',
                 filepath: 'test/dest/bundle.js',
-                line: 638
-            }), _rec65._expr(_rec65._capt(-1, 'arguments/1'), {
+                line: 639
+            }), _rec53._expr(_rec53._capt(-1, 'arguments/1'), {
                 content: 'assert.equal(result, -1)',
                 filepath: 'test/dest/bundle.js',
-                line: 638
+                line: 639
             }));
         });
     });
@@ -35850,17 +35795,17 @@ describe('Region', function () {
             done();
         });
         it('should return state', function () {
-            var _rec66 = new _PowerAssertRecorder1();
-            var _rec67 = new _PowerAssertRecorder1();
+            var _rec54 = new _PowerAssertRecorder1();
+            var _rec55 = new _PowerAssertRecorder1();
             result = region.getStateById(stateId);
-            assert.equal(_rec66._expr(_rec66._capt(result, 'arguments/0'), {
+            assert.equal(_rec54._expr(_rec54._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 655
-            }), _rec67._expr(_rec67._capt(state, 'arguments/1'), {
+                line: 656
+            }), _rec55._expr(_rec55._capt(state, 'arguments/1'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 655
+                line: 656
             }));
         });
     });
@@ -35873,17 +35818,17 @@ describe('Region', function () {
             done();
         });
         it('should return state', function () {
-            var _rec68 = new _PowerAssertRecorder1();
-            var _rec69 = new _PowerAssertRecorder1();
+            var _rec56 = new _PowerAssertRecorder1();
+            var _rec57 = new _PowerAssertRecorder1();
             result = region.getStateByName('state');
-            assert.equal(_rec68._expr(_rec68._capt(result, 'arguments/0'), {
+            assert.equal(_rec56._expr(_rec56._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 671
-            }), _rec69._expr(_rec69._capt(state, 'arguments/1'), {
+                line: 672
+            }), _rec57._expr(_rec57._capt(state, 'arguments/1'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 671
+                line: 672
             }));
         });
     });
@@ -35897,17 +35842,17 @@ describe('Region', function () {
             done();
         });
         it('should return transit', function () {
-            var _rec70 = new _PowerAssertRecorder1();
-            var _rec71 = new _PowerAssertRecorder1();
+            var _rec58 = new _PowerAssertRecorder1();
+            var _rec59 = new _PowerAssertRecorder1();
             result = region.getTransitionById(transitId);
-            assert.equal(_rec70._expr(_rec70._capt(result, 'arguments/0'), {
+            assert.equal(_rec58._expr(_rec58._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 688
-            }), _rec71._expr(_rec71._capt(transit, 'arguments/1'), {
+                line: 689
+            }), _rec59._expr(_rec59._capt(transit, 'arguments/1'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 688
+                line: 689
             }));
         });
     });
@@ -35920,17 +35865,17 @@ describe('Region', function () {
             done();
         });
         it('should return transit', function () {
-            var _rec72 = new _PowerAssertRecorder1();
-            var _rec73 = new _PowerAssertRecorder1();
+            var _rec60 = new _PowerAssertRecorder1();
+            var _rec61 = new _PowerAssertRecorder1();
             result = region.getTransitionByName('transit');
-            assert.equal(_rec72._expr(_rec72._capt(result, 'arguments/0'), {
+            assert.equal(_rec60._expr(_rec60._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 704
-            }), _rec73._expr(_rec73._capt(transit, 'arguments/1'), {
+                line: 705
+            }), _rec61._expr(_rec61._capt(transit, 'arguments/1'), {
                 content: 'assert.equal(result, transit)',
                 filepath: 'test/dest/bundle.js',
-                line: 704
+                line: 705
             }));
         });
     });
@@ -35943,18 +35888,18 @@ describe('Region', function () {
             done();
         });
         it('should return state', function () {
-            var _rec74 = new _PowerAssertRecorder1();
-            var _rec75 = new _PowerAssertRecorder1();
+            var _rec62 = new _PowerAssertRecorder1();
+            var _rec63 = new _PowerAssertRecorder1();
             state._activate();
             result = region.findActiveState();
-            assert.equal(_rec74._expr(_rec74._capt(result, 'arguments/0'), {
+            assert.equal(_rec62._expr(_rec62._capt(result, 'arguments/0'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 721
-            }), _rec75._expr(_rec75._capt(state, 'arguments/1'), {
+                line: 722
+            }), _rec63._expr(_rec63._capt(state, 'arguments/1'), {
                 content: 'assert.equal(result, state)',
                 filepath: 'test/dest/bundle.js',
-                line: 721
+                line: 722
             }));
         });
     });

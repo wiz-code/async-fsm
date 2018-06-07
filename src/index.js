@@ -1,5 +1,5 @@
 /* Async-FSM.js
- * version 0.5.81
+ * version 0.5.82
  *
  * Copyright (c) 2018 Masa (http://wiz-code.digick.jp)
  * LICENSE: MIT license

@@ -72,7 +72,7 @@ exports.ModelTest = function (test) {
 
         if (e.target === 'a/b/2') {
             test.equal(e.event, 'update');
-            test.ok(_.isEqual(e.value, {f: {g: 100}}));
+            test.ok(_.isEqual(e.value, {}));
         }
     };
 

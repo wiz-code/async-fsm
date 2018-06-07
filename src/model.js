@@ -607,32 +607,17 @@ function _getParentPath(query, collection) {
     return collection;
 }
 
-/*function _extend(dest, src) {
-    dest = dest || (_.isArray(src) ? [] : {});
-
-    _.each(src, function (value, key) {
-        if (_.isArray(value) || _isPlainObject(value)) {
-            dest[key] = _extend(dest[key], value);
-
-        } else {
-            dest[key] = value;
-        }
-    });
-
-    return dest;
-}*/
-
 function _extend(dest, src) {
     var i, l, keys, key, value;
     if (_.isArray(src)) {
-        dest = dest != null ? dest : [];
+        dest = dest || [];
 
         for (i = 0, l = src.length; i < l; i += 1) {
             value = !_.isObject(src[i]) ? src[i] : _extend(undefined, src[i]);
             dest.push(value);
         }
     } else if (_isPlainObject(src)) {
-        dest = dest != null ? dest : {};
+        dest = dest || {};
         keys = _.keys(src);
 
         for (i = 0, l = keys.length; i < l; i += 1) {
@@ -655,10 +640,6 @@ function _merge(dest) {
     });
 
     return dest;
-}
-
-function _isPrimitive(value) {
-    return _.isUndefined(value) || _.isNull(value) || _.isString(value) || _.isNumber(value) || _.isBoolean(value);
 }
 
 function _validateEach(value, required) {
