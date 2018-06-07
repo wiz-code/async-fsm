@@ -64,7 +64,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     set: function (query, value) {
-        var collection, parentPaths, destPaths, srcPaths, deletePaths, updatePaths, createPaths, path, oldValue, beforeSet, afterSet, parentPath, parent;
+        var collection, parentPaths, destPaths, srcPaths, deletePaths, updatePaths, createPaths, path, oldValue, preData, postData, parentPath, parent;
 
         if (_.isUndefined(value)) {
             value = query;
@@ -94,24 +94,16 @@ Model.prototype = _.create(Observable.prototype, {
         updatePaths = _.intersection(destPaths, srcPaths).concat(parentPaths);
         createPaths = _.difference(srcPaths, destPaths);
 
-        beforeSet = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
-
-        if (_isPrimitive(this._data)) {
-            beforeSet = this._data;
-            afterSet = _isPrimitive(value) ? value : _extend(undefined, value);
-        } else {
-            beforeSet = _extend(undefined, this._data);
-            this._temp = _extend(undefined, this._data);
-            this._set('_temp', query, value);
-            afterSet = this._temp;
-        }
-
-        _collect(beforeSet, deletePaths, collection, 'delete');
-        _collect(beforeSet, updatePaths, collection, 'update');
-        _collect(afterSet, updatePaths, collection, 'update');
-        _collect(afterSet, createPaths, collection, 'create');
-
+        preData = _extend(undefined, this._data);
+        this._temp = _extend(undefined, this._data);
+        this._set('_temp', query, _extend(undefined, value));
+        postData = this._temp;
         delete this._temp;
+
+        _collect(preData, deletePaths, collection, 'delete');
+        _collect(preData, updatePaths, collection, 'delete');
+        _collect(postData, updatePaths, collection, 'create');
+        _collect(postData, createPaths, collection, 'create');
 
         if (path.length) {
             parentPath = _.initial(path);
@@ -127,7 +119,7 @@ Model.prototype = _.create(Observable.prototype, {
             this._data = value;
         }
 
-        _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
+        _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array) {
             var deleted, created, object;
 
             if (array.length > 1) {
@@ -135,8 +127,8 @@ Model.prototype = _.create(Observable.prototype, {
                 created = array[1];
                 if (!_.isEqual(deleted[2], created[2])) {
                     return {
-                        event: 'update',
                         target: deleted[0],
+                        event: 'update',
                         value: created[2],
                         oldValue: deleted[2],
                     };
@@ -144,7 +136,7 @@ Model.prototype = _.create(Observable.prototype, {
             } else {
                 object = array[0];
                 return {
-                    target: key,
+                    target: object[0],
                     event: object[1],
                     value: object[2],
                 };
@@ -165,7 +157,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     unset: function (query) {
-        var path, value, collection, deletePaths, updatePaths, parentPath, parent;
+        var path, value, collection, deletePaths, updatePaths, preData, postData, parentPath, parent;
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
@@ -178,12 +170,15 @@ Model.prototype = _.create(Observable.prototype, {
         if (!_.isUndefined(value)) {
             _getChildrenPath(value, query, deletePaths);
 
-            this._temp = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
-
-            _collect(this._temp, deletePaths, collection, 'delete');
-            _collect(this._temp, updatePaths, collection, 'update');
-
+            preData = _extend(undefined, this._data);
+            this._temp = _extend(undefined, this._data);
+            this._unset('_temp', query);
+            postData = this._temp;
             delete this._temp;
+
+            _collect(preData, deletePaths, collection, 'delete');
+            _collect(preData, updatePaths, collection, 'delete');
+            _collect(postData, updatePaths, collection, 'create');
 
             if (path.length) {
                 parentPath = _.initial(path);
@@ -199,16 +194,33 @@ Model.prototype = _.create(Observable.prototype, {
                 delete this._data;
             }
 
-            _.each(_.map(collection, function (object) {
-                return {
-                    target: object[0],
-                    event: object[1],
-                    value: object[2],
-                };
-            }), function (object) {
+            _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array) {
+                var deleted, created;
+
+                if (array.length > 1) {
+                    deleted = array[0];
+                    created = array[1];
+
+                    return {
+                        event: 'update',
+                        target: deleted[0],
+                        value: created[2],
+                        oldValue: deleted[2],
+                    };
+                } else {
+                    deleted = array[0];
+                    return {
+                        target: deleted[0],
+                        event: deleted[1],
+                        value: deleted[2],
+                    };
+                }
+            })), function (object) {
                 if (!_.isUndefined(this._cache[object.target])) {
                     if (object.event === 'delete') {
                         delete this._cache[object.target];
+                    } else {
+                        this._cache[object.target] = object.value;
                     }
                 }
 
@@ -226,7 +238,12 @@ Model.prototype = _.create(Observable.prototype, {
         if (!_.isString(query)) {
             query = DELIMITER;
         } else {
-            srcs = srcs.slice(1);
+            if (srcs.length > 1) {
+                srcs = srcs.slice(1);
+            } else {
+                query = DELIMITER;
+                srcs = srcs[0];
+            }
         }
 
         query = _normalizeQuery(query);
@@ -235,31 +252,31 @@ Model.prototype = _.create(Observable.prototype, {
         collection = [];
 
         _.each(srcs, function (src) {
-            var parentPaths, destPaths, srcPaths, updatePaths, createPaths, beforeMerge, afterMerge;
+            var parentPaths, destPaths, srcPaths, updatePaths, createPaths, preData, postData;
+
+            if (!_.isObject(src)) {
+                logger.error('マージ元は配列か連想配列を指定してください。');
+            }
+
             parentPaths = _getParentPath(query);
             destPaths = _getChildrenPath(dest, query).concat(parentPaths);
-            srcPaths = _getChildrenPath(src, query).concat(parentPaths);
+            srcPaths = _getMergedChildrenPath(dest, src, query).concat(parentPaths);
 
             updatePaths = _.intersection(destPaths, srcPaths);
             createPaths = _.difference(srcPaths, destPaths);
 
-            if (_isPrimitive(this._data)) {
-                beforeMerge = this._data;
-                afterMerge = _isPrimitive(src) ? src : _extend(undefined, src);
-            } else {
-                beforeMerge = _extend(undefined, this._data);
-                this._temp = _extend(undefined, this._data);
-                this._set('_temp', query, src);
-                afterMerge = this._temp;
-            }
-
-            _collect(beforeMerge, updatePaths, collection, 'delete');
-            _collect(afterMerge, updatePaths, collection, 'create');
-            _collect(afterMerge, createPaths, collection, 'create');
-
+            preData = _extend(undefined, this._data);
+            this._temp = _extend(undefined, this._data);
+            this._merge('_temp', query, _extend(undefined, src));
+            postData = this._temp;
             delete this._temp;
 
-            _merge(dest, src);
+            _collect(preData, updatePaths, collection, 'delete');
+            _collect(postData, updatePaths, collection, 'create');
+            _collect(postData, createPaths, collection, 'create');
+
+            dest = _merge(dest, src);
+            //_merge(dest, src);
 
             _.each(_.compact(_.map(_.groupBy(collection, '0'), function (array, key) {
                 var deleted, created;
@@ -297,7 +314,7 @@ Model.prototype = _.create(Observable.prototype, {
     },
 
     save: function () {
-        this._savedData = _isPrimitive(this._data) ? this._data : _extend(undefined, this._data);
+        this._savedData = _extend(undefined, this._data);
     },
 
     restore: function () {
@@ -352,20 +369,38 @@ Model.prototype = _.create(Observable.prototype, {
         return value;
     },
 
+    _unset: function (type, query) {
+        var path, value, parentPath, parent;
+
+        query = _normalizeQuery(query);
+        path = _parseQuery(query);
+        value = this._get(type, query);
+
+        if (path.length) {
+            parentPath = _.initial(path);
+
+            if (parentPath.length) {
+                parent = _.property(parentPath)(this[type]);
+            } else {
+                parent = this[type];
+            }
+
+            delete parent[_.last(path)];
+        } else {
+            delete this[type];
+        }
+
+        return value;
+    },
+
     _merge: function (type, query, value) {
         var path, oldValue, dest;
 
         query = _normalizeQuery(query);
         path = _parseQuery(query);
-
         oldValue = this._get(type, query);
 
-        if (_isPrimitive(oldValue) || _isPrimitive(value) || _.isFunction(value)) {
-            dest = value;
-        } else {
-            dest = _merge(oldValue, value);
-        }
-
+        dest = _merge(oldValue, value);
         this._set(type, query, dest);
 
         return dest;
@@ -511,6 +546,34 @@ function _bind(object, context) {
     return object;
 }
 
+function _getMergedChildrenPath(dest, src, currentPath, collection) {
+    var destLength;
+    currentPath = !_.isUndefined(currentPath) ? currentPath : DELIMITER;
+    collection = !_.isUndefined(collection) ? collection : [];
+
+    if (_.isArray(src)) {
+        destLength = _.isArray(dest) ? dest.length : 0;
+
+        _.each(src, function (element, index) {
+            var currentIndex, path;
+            currentIndex = '' + (destLength + index);
+            path = currentPath !== DELIMITER ? currentPath + DELIMITER + currentIndex : currentIndex;
+
+            _getMergedChildrenPath(undefined, element, path, collection);
+        });
+    } else if (_isPlainObject(src)) {
+        _.each(src, function (value, key) {
+            var path, destChild;
+            path = currentPath !== DELIMITER ? currentPath + DELIMITER + key : key;
+            destChild = _isPlainObject(dest) ? dest[key] : undefined;
+            _getMergedChildrenPath(destChild, value, path, collection);
+        });
+    }
+
+    collection.push(currentPath);
+    return collection;
+}
+
 function _getChildrenPath(object, currentPath, collection) {
     currentPath = !_.isUndefined(currentPath) ? currentPath : DELIMITER;
     collection = !_.isUndefined(collection) ? collection : [];
@@ -544,7 +607,7 @@ function _getParentPath(query, collection) {
     return collection;
 }
 
-function _extend(dest, src) {
+/*function _extend(dest, src) {
     dest = dest || (_.isArray(src) ? [] : {});
 
     _.each(src, function (value, key) {
@@ -555,6 +618,31 @@ function _extend(dest, src) {
             dest[key] = value;
         }
     });
+
+    return dest;
+}*/
+
+function _extend(dest, src) {
+    var i, l, keys, key, value;
+    if (_.isArray(src)) {
+        dest = dest != null ? dest : [];
+
+        for (i = 0, l = src.length; i < l; i += 1) {
+            value = !_.isObject(src[i]) ? src[i] : _extend(undefined, src[i]);
+            dest.push(value);
+        }
+    } else if (_isPlainObject(src)) {
+        dest = dest != null ? dest : {};
+        keys = _.keys(src);
+
+        for (i = 0, l = keys.length; i < l; i += 1) {
+            key = keys[i];
+            value = !_.isObject(src[key]) ? src[key] : _extend(dest[key], src[key]);
+            dest[key] = value;
+        }
+    } else {
+        dest = src;
+    }
 
     return dest;
 }
