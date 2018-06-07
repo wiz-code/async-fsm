@@ -13,20 +13,24 @@ var toString = Object.prototype.toString;
 var getPrototypeOf = Object.getPrototypeOf;
 
 function _extend(dest, src) {
-    if (!_.isObject(src)) {
-        return src;
-    }
+    var i, l, keys, key, value;
+    if (_.isArray(src)) {
+        dest = _.isArray(dest) ? dest : [];
 
-    dest = dest || (_.isArray(src) ? [] : {});
+        for (i = 0, l = src.length; i < l; i += 1) {
+            value = !_.isObject(src[i]) ? src[i] : _extend(undefined, src[i]);
+            dest.push(value);
+        }
+    } else {
+        dest = _isPlainObject(dest) ? dest : {};
+        keys = _.keys(src);
 
-    _.each(src, function (value, key) {
-        if (_.isArray(value) || _isPlainObject(value)) {
-            dest[key] = _extend(dest[key], value);
-
-        } else {
+        for (i = 0, l = keys.length; i < l; i += 1) {
+            key = keys[i];
+            value = !_.isObject(src[key]) ? src[key] : _extend(dest[key], src[key]);
             dest[key] = value;
         }
-    });
+    }
 
     return dest;
 }
@@ -132,6 +136,7 @@ describe('Model', function () {
                     'bar',
                 ],
             };
+            var cloneData = _extend(undefined, data);
 
             var start = performance.now();
             model.set(data);
@@ -166,33 +171,29 @@ describe('Model', function () {
                 {
                     i: [
                         {
-                            j: {
-                                k: [4, 5, 6],
+                            l: {
+                                m: [4, 5, 6],
                             },
-                            l: 'new element',
+                            n: 'new element',
                         },
                     ],
                 },
             ];
 
-            var first = function (e) {
+            var callback = function (e) {
                 assert.equal(e.value, 1);
             };
-            var second = function (e) {
-                assert.equal(e.value, 4);
-            };
 
-            model.watch('h/i/0/j/k/0', first);
+            model.watch('h/i/0/j/k/0', callback);
 
             var start = performance.now();
             model.merge(mergeData[0]);
             var duration = performance.now() - start;
             console.log('#merge() performance', duration, 'ms');
 
-            model.unwatch('h/i/0/j/k/0', first);
-            model.watch('h/i/0/j/k/0', second);
+            model.unwatch('h/i/0/j/k/0', callback);
 
-            var merged = _merge(data, mergeData[0]);
+            var merged = _merge(cloneData, mergeData[0]);
             var isEqual = _.isEqual(model.get(), merged);
             assert.ok(isEqual);
 
@@ -201,7 +202,7 @@ describe('Model', function () {
                 assert.equal(e.value, 'new element');
             };
 
-            model.watch('h/i/0/l', callback);
+            model.watch('h/i/1/n', callback);
             model.merge('h', mergeData[1]);
             var isEqual = _.isEqual(model.get(), _merge(merged, {h: mergeData[1]}));
             assert.ok(isEqual);
@@ -214,7 +215,7 @@ describe('Model', function () {
         });
     });
 
-    describe('#mergeProp()', function () {
+    /*describe('#mergeProp()', function () {
         before(function () {
             //
         });
@@ -307,5 +308,5 @@ describe('Model', function () {
         after(function () {
             //
         });
-    });
+    });*/
 });
